@@ -1,0 +1,12 @@
+[package]
+name = "mini_gl_fb"
+version = "0.1.0"
+authors = ["shivshank"]
+
+[dependencies]
+glutin = "*"
+gl = "*"
+
+[dependencies.rustic_gl]
+git = "https://github.com/shivshank/rustic_gl.git"
+rev = "f849057"
