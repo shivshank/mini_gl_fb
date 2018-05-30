@@ -1,6 +1,6 @@
 [package]
 name = "mini_gl_fb"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["shivshank"]
 
 [dependencies]
