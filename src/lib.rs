@@ -28,9 +28,20 @@ pub fn gotta_go_fast<S: ToString>(window_title: S, window_width: i32, window_hei
         gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
     }
 
-    let vertex_source = include_str!("./default_vertex_shader.glsl");
-    let fragment_source = include_str!("./default_fragment_shader.glsl");
-    let program = rustic_gl::raw::create_basic_program(vertex_source, fragment_source).unwrap();
+    let vertex_shader = rustic_gl::raw::create_shader(
+        gl::VERTEX_SHADER,
+        include_str!("./default_vertex_shader.glsl"),
+    ).unwrap();
+    let fragment_shader = rustic_gl::raw::create_shader(
+        gl::FRAGMENT_SHADER,
+        include_str!("./default_fragment_shader.glsl"),
+    ).unwrap();
+    let program = unsafe {
+        build_program(&[
+            Some(vertex_shader),
+            Some(fragment_shader),
+        ])
+    };
 
     let sampler_location = unsafe {
         let location = gl::GetUniformLocation(program, b"u_tex0\0".as_ptr() as *const _);
@@ -70,6 +81,9 @@ pub fn gotta_go_fast<S: ToString>(window_title: S, window_width: i32, window_hei
         gl_window,
         program,
         sampler_location,
+        vertex_shader: Some(vertex_shader),
+        geometry_shader: None,
+        fragment_shader: Some(fragment_shader),
         texture,
         vao,
         vbo,
@@ -84,6 +98,9 @@ pub struct Framebuffer {
     gl_window: glutin::GlWindow,
     program: GLuint,
     sampler_location: GLint,
+    vertex_shader: Option<GLuint>,
+    geometry_shader: Option<GLuint>,
+    fragment_shader: Option<GLuint>,
     texture: GLuint,
     vao: GLuint,
     vbo: GLuint,
@@ -231,4 +248,23 @@ fn create_gl_buffer() -> Option<GLuint> {
         }
         Some(b)
     }
+}
+
+unsafe fn build_program(shaders: &[Option<GLuint>]) -> GLuint {
+    let program = rustic_gl::raw::create_program()
+        .unwrap();
+    for shader in shaders.iter() {
+        if let &Some(shader) = shader {
+            gl::AttachShader(program, shader);
+        }
+    }
+    gl::LinkProgram(program);
+    rustic_gl::raw::get_link_status(program)
+        .unwrap();
+    for shader in shaders {
+        if let &Some(shader) = shader {
+            gl::DetachShader(program, shader);
+        }
+    }
+    program
 }
