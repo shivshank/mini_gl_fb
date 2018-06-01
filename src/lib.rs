@@ -13,7 +13,7 @@ use gl::types::*;
 
 use std::ptr::null;
 
-type VertexFormat = buffer_layout!([i8; 2], [u8; 2]);
+type VertexFormat = buffer_layout!([f32; 2], [f32; 2]);
 
 pub fn gotta_go_fast<S: ToString>(window_title: S, window_width: i32, window_height: i32) -> Framebuffer {
     let events_loop = glutin::EventsLoop::new();
@@ -61,15 +61,17 @@ pub fn gotta_go_fast<S: ToString>(window_title: S, window_width: i32, window_hei
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         VertexFormat::declare(0);
-        let verts = [
-            [-1i8, 1], [0, 0],
-            [-1, -1], [0, 1],
-            [1, -1], [1, 1],
-            [1, -1], [1, 1],
-            [1, 1], [1, 0],
-            [-1, 1], [0, 0],
+
+        let verts: [[f32; 2]; 12] = [
+            [-1., 1.], [0., 0.], // top left
+            [-1., -1.], [0., 1.], // bottom left
+            [1., -1.], [1., 1.], // bottom right
+            [1., -1.], [1., 1.], // bottom right
+            [1., 1.], [1., 0.], // top right
+            [-1., 1.], [0., 0.], // top left
         ];
-        gl::BufferData(gl::ARRAY_BUFFER, (verts.len() * 2) as _, verts.as_ptr() as *const _, gl::STATIC_DRAW);
+        use std::mem::size_of_val;
+        gl::BufferData(gl::ARRAY_BUFFER, size_of_val(&verts) as _, verts.as_ptr() as *const _, gl::STATIC_DRAW);
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         gl::BindVertexArray(0);
     }
@@ -128,6 +130,21 @@ impl Framebuffer {
         })
     }
 
+    pub fn use_vertex_shader(&mut self, source: &str) {
+        rebuild_shader(&mut self.vertex_shader, gl::VERTEX_SHADER, source);
+        self.relink_program();
+    }
+
+    pub fn use_fragment_shader(&mut self, source: &str) {
+        rebuild_shader(&mut self.fragment_shader, gl::FRAGMENT_SHADER, source);
+        self.relink_program();
+    }
+
+    pub fn use_geometry_shader(&mut self, source: &str) {
+        rebuild_shader(&mut self.geometry_shader, gl::GEOMETRY_SHADER, source);
+        self.relink_program();
+    }
+
     pub fn change_buffer_format<T: ToGlType>(&mut self, format: BufferFormat) {
         self.texture_format = (format, T::to_gl_enum());
     }
@@ -171,6 +188,17 @@ impl Framebuffer {
             gl::UseProgram(0);
 
             self.gl_window.swap_buffers().unwrap();
+        }
+    }
+
+    fn relink_program(&mut self) {
+        unsafe {
+            gl::DeleteProgram(self.program);
+            self.program = build_program(&[
+                self.vertex_shader,
+                self.fragment_shader,
+                self.geometry_shader,
+            ]);
         }
     }
 }
@@ -247,6 +275,30 @@ fn create_gl_buffer() -> Option<GLuint> {
             return None;
         }
         Some(b)
+    }
+}
+
+fn rebuild_shader(shader: &mut Option<GLuint>, kind: GLenum, source: &str) {
+    if let Some(shader) = *shader {
+        unsafe {
+            gl::DeleteShader(shader);
+        }
+    }
+    let compilation_result = rustic_gl::raw::create_shader(kind, source);
+    match compilation_result {
+        Ok(gl_id) => {
+            *shader = Some(gl_id);
+        },
+        Err(rustic_gl::error::GlError::ShaderCompilation(info)) => {
+            if let Some(log) = info {
+                panic!("Shader compilation failed with the following information: {}", log);
+            } else {
+                panic!("Shader compilation failed without any information.")
+            }
+        },
+        Err(err) => {
+            panic!("An error occured while compiling shader: {}", err);
+        }
     }
 }
 
