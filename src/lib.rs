@@ -8,6 +8,7 @@ extern crate rustic_gl;
 extern crate gl;
 
 use glutin::GlContext;
+use glutin::dpi::LogicalSize;
 
 use gl::types::*;
 
@@ -19,7 +20,7 @@ pub fn gotta_go_fast<S: ToString>(window_title: S, window_width: i32, window_hei
     let events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
         .with_title(window_title.to_string())
-        .with_dimensions(window_width as _, window_height as _);
+        .with_dimensions(LogicalSize::new(window_width as _, window_height as _));
     let context = glutin::ContextBuilder::new();
     let gl_window = glutin::GlWindow::new(window, context, &events_loop).unwrap();
 
