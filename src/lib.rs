@@ -1,6 +1,13 @@
 //! Hardware accelerated library inspired by minifb and friends.
 //!
-//! Powered by OpenGL. Default context is provided by glutin, but
+//! Powered by OpenGL. Default context is provided by glutin, but this may be optional in the
+//! future so that you can create your own context any way you like.
+//!
+//! # Note on possible context creation failure:
+//!
+//! Currently uses the `gl` crate for OpenGL loading. OpenGL context creation may fail if your
+//! setup does not support the newest OpenGL. This bug needs to be verified and is be fixable.
+//! OpenGL ~3 is currently required, but OpenGL 2.1 support should be feasible if requested.
 
 extern crate glutin;
 #[macro_use]
