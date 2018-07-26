@@ -41,6 +41,7 @@ pub fn init_glutin_context<S: ToString>(config: &Config<S>) -> (EventsLoop, GlWi
 
 type VertexFormat = buffer_layout!([f32; 2], [f32; 2]);
 
+/// Create the OpenGL resources needed for drawing to a buffer.
 pub fn init_framebuffer<S: ToString>(config: &Config<S>) -> Framebuffer {
     // The config takes the size in u32 because that's all that actually makes sense but since
     // OpenGL is from the Land of C where a Working Type System doesn't exist, we work with i32s
@@ -117,6 +118,14 @@ pub fn init_framebuffer<S: ToString>(config: &Config<S>) -> Framebuffer {
     }
 }
 
+/// Hides away the guts of the library.
+///
+/// Public methods are considered stable. Provides more advanced methods that may be difficult
+/// or more complicated to use, but may be applicable to some use cases.
+///
+/// When `MiniGlFb` wraps a method from `Internal`, the documentation is provided there. If there
+/// is no documentation and you find the method is non-trivial, it's a bug! Feel free to submit an
+/// issue!
 pub struct Internal {
     pub events_loop: EventsLoop,
     pub gl_window: GlWindow,
