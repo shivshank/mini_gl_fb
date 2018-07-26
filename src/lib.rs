@@ -67,8 +67,9 @@ pub extern crate gl;
 
 mod config;
 mod core;
-// mod breakout;
+mod breakout;
 
+pub use breakout::GlutinBreakout;
 pub use config::Config;
 pub use core::{Internal, BufferFormat};
 
@@ -186,6 +187,18 @@ impl MiniGlFb {
     /// When redraw is true, redraws as fast as possible. This function is primarily for debugging.
     pub fn persist_and_redraw(&mut self, redraw: bool) {
         self.internal.persist_and_redraw(redraw);
+    }
+
+    /// Need full access to Glutin's event handling? No problem!
+    ///
+    /// Hands you the event loop and the window we created, so you can handle events however you
+    /// want, and the Framebuffer, so you can still draw easily!
+    ///
+    /// **IMPORTANT:** You should make sure to render something before swapping buffers or **the
+    /// window may flash violently**. You can call `fb.redraw()` directly before if you are unsure
+    /// that an OpenGL draw call was issued. `fb.update_buffer` will typically issue a draw call.
+    pub fn glutin_breakout(self) -> GlutinBreakout {
+        self.internal.glutin_breakout()
     }
 
     // TODO: resize_buffer

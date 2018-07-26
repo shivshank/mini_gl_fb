@@ -1,4 +1,5 @@
 use config::Config;
+use breakout::GlutinBreakout;
 
 use rustic_gl;
 
@@ -155,9 +156,17 @@ impl Internal {
                 }
             });
             if redraw {
-                self.fb.draw(|_| {});
+                self.fb.redraw();
                 self.gl_window.swap_buffers().unwrap();
             }
+        }
+    }
+
+    pub fn glutin_breakout(self) -> GlutinBreakout {
+        GlutinBreakout {
+            events_loop: self.events_loop,
+            gl_window: self.gl_window,
+            fb: self.fb,
         }
     }
 }
@@ -173,6 +182,8 @@ impl Internal {
 /// exposed, if you need something in a pinch you can dig in easily and make it happen.
 ///
 /// The internal fields may change.
+///
+/// TODO: Possibly create a FramebufferInternal struct?
 pub struct Framebuffer {
     pub buffer_width: i32,
     pub buffer_height: i32,
@@ -230,7 +241,15 @@ impl Framebuffer {
 
     // TODO: resize_buffer
 
-    fn draw<F: FnOnce(&Framebuffer)>(&mut self, f: F) {
+    pub fn redraw(&mut self) {
+        self.draw(|_| {})
+    }
+
+    /// Draw the quad to the active context. Optionally issue other commands after binding
+    /// everything but before
+    ///
+    /// You probably want `redraw` (equivalent to `.draw(|_| {})`).
+    pub fn draw<F: FnOnce(&Framebuffer)>(&mut self, f: F) {
         unsafe {
             gl::UseProgram(self.program);
             gl::BindVertexArray(self.vao);
@@ -244,7 +263,7 @@ impl Framebuffer {
         }
     }
 
-    fn relink_program(&mut self) {
+    pub fn relink_program(&mut self) {
         unsafe {
             gl::DeleteProgram(self.program);
             self.program = build_program(&[
