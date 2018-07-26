@@ -16,6 +16,9 @@
 //! }
 //! ```
 //!
+//! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer[0] is the top
+//! left pixel.
+//!
 //! # Interlude: Library philosophy
 //!
 //! All of the internals of this library are exposed. Any fields behind `mini_gl_fb.internal`
