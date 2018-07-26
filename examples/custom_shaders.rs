@@ -3,7 +3,7 @@ extern crate mini_gl_fb;
 /// Geometry shaders allow you to procedurally generate new geometry from the vertex data.
 ///
 /// This shader takes the two triangles submitted by mini_gl_fb and turns them into a circle!
-const geometry_source: &str = r"
+const GEOMETRY_SOURCE: &str = r"
     #version 330 core
 
     layout (triangles) in;
@@ -73,7 +73,7 @@ const geometry_source: &str = r"
     }
 ";
 
-const fragment_source: &str = r"
+const FRAGMENT_SOURCE: &str = r"
     #version 330 core
 
     in vec2 g_uv;
@@ -99,23 +99,23 @@ const fragment_source: &str = r"
 extern crate gl;
 
 fn main() {
-    let width = 800;
-    let height = 600;
+    let width = 800.0;
+    let height = 600.0;
 
     let mut fb = mini_gl_fb::gotta_go_fast("Hello shaders!", width, height);
 
     let mut buffer = vec![[128u8, 0, 0, 255]; (width * height) as usize];
     // let's write a red line into the buffer roughly along the diagonal (misses many pixels)
     for i in 0..100 {
-        let j = i as f32 / 100.0;
-        let index = ((width as f32) * j * ((height as f32) + 1.0)).floor() as usize;
+        let j = i as f64 / 100.0;
+        let index = (width * j * (height + 1.0)).floor() as usize;
         buffer[index] = [255, 0, 0, 255];
     }
 
     // Let's keep using the default vertex shader
-    // fb.use_vertex_shader(...);
-    fb.use_geometry_shader(geometry_source);
-    fb.use_fragment_shader(fragment_source);
+    // fb.internal.use_vertex_shader(...);
+    fb.internal.fb.use_geometry_shader(GEOMETRY_SOURCE);
+    fb.internal.fb.use_fragment_shader(FRAGMENT_SOURCE);
 
     fb.update_buffer(&buffer);
 

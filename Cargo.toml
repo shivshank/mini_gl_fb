@@ -9,4 +9,3 @@ gl = "0.10.0"
 
 [dependencies.rustic_gl]
 git = "https://github.com/shivshank/rustic_gl.git"
-rev = "f849057"
