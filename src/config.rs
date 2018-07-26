@@ -23,6 +23,18 @@ pub struct Config<S: ToString> {
     pub window_size: (f64, f64),
 }
 
+impl<'a> Default for Config<&'a str> {
+    fn default() -> Self {
+        Config {
+            buffer_size: (0, 0),
+            resizable: false,
+            // :^)
+            window_title: "Super Mini GL Framebufferer 3!",
+            window_size: (600.0, 480.0),
+        }
+    }
+}
+
 impl Default for Config<String> {
     fn default() -> Self {
         Config {
