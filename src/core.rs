@@ -43,13 +43,18 @@ pub fn init_glutin_context<S: ToString>(config: &Config<S>) -> (EventsLoop, GlWi
 type VertexFormat = buffer_layout!([f32; 2], [f32; 2]);
 
 /// Create the OpenGL resources needed for drawing to a buffer.
-pub fn init_framebuffer<S: ToString>(config: &Config<S>) -> Framebuffer {
+pub fn init_framebuffer(
+    buffer_width: u32,
+    buffer_height: u32,
+    viewport_width: u32,
+    viewport_height: u32
+) -> Framebuffer {
     // The config takes the size in u32 because that's all that actually makes sense but since
     // OpenGL is from the Land of C where a Working Type System doesn't exist, we work with i32s
-    let buffer_width = if config.buffer_size.0 == 0 { config.window_size.0.round() as _ }
-        else { config.buffer_size.0 as _ };
-    let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
-        else { config.buffer_size.1 as _ };
+    let buffer_width = buffer_width as i32;
+    let buffer_height = buffer_height as i32;
+    let vp_width = viewport_width as i32;
+    let vp_height = viewport_height as i32;
 
     let vertex_shader = rustic_gl::raw::create_shader(
         gl::VERTEX_SHADER,
@@ -105,10 +110,10 @@ pub fn init_framebuffer<S: ToString>(config: &Config<S>) -> Framebuffer {
     }
 
     Framebuffer {
-        buffer_width: buffer_width,
-        buffer_height: buffer_height,
-        vp_width: config.window_size.0 as _,
-        vp_height: config.window_size.1 as _,
+        buffer_width,
+        buffer_height,
+        vp_width,
+        vp_height,
         program,
         sampler_location,
         vertex_shader: Some(vertex_shader),

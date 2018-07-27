@@ -11,8 +11,6 @@
 /// }
 /// ```
 ///
-/// To streamline this pattern and save you imports, see the `get_fancy!` macro.
-///
 /// If there's a config option you want to see or think is missing, please open an issue!
 pub struct Config<S: ToString> {
     /// Sets the scale of the buffer. The buffer will automatically scale to the size of the

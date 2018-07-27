@@ -76,46 +76,6 @@ pub use breakout::GlutinBreakout;
 pub use config::Config;
 pub use core::{Internal, BufferFormat};
 
-/*
-// TODO: Support mixed { prop, prop: value, .. } for creating configs through the macro
-
-#[macro_export]
-macro_rules! get_fancy {
-    (
-        $($setting:ident: $setting_value:expr),*
-    ) => {
-        // Support both no trailing comma and trailing comma
-        // (The core macro impl assumes trailing comma)
-        get_fancy!($($setting: $setting_value),*,)
-    };
-
-    (
-        $($setting:ident),*
-    ) => {
-        // Support both no trailing comma and trailing comma
-        // (The core macro impl assumes trailing comma)
-        get_fancy!($($setting),*,)
-    };
-
-    (
-        $($setting:ident),*,
-    ) => {
-        get_fancy!($($setting: $setting),*,)
-    };
-
-    (
-        $($setting:ident: $setting_value:expr),*,
-    ) => {{
-        let config = $crate::Config {
-            $(
-                $setting: $setting_value
-            ),*,
-            .. Default::default()
-        };
-        $crate::get_fancy(config)
-    }};
-}*/
-
 /// Creates a non resizable window and framebuffer with a given size in pixels.
 ///
 /// Please note that the window size is in logical device pixels, so on a high DPI monitor the
@@ -145,8 +105,25 @@ pub fn gotta_go_fast<S: ToString>(
 /// glutin or in this library, this function exists as a possible work around (or in case for some
 /// reason everything must be absolutely correct at window creation)
 pub fn get_fancy<S: ToString>(config: Config<S>) -> MiniGlFb {
+    let buffer_width = if config.buffer_size.0 == 0 { config.window_size.0.round() as _ }
+        else { config.buffer_size.0 };
+    let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
+        else { config.buffer_size.1 };
+
     let (events_loop, gl_window) = core::init_glutin_context(&config);
-    let fb = core::init_framebuffer(&config);
+
+    let dpi_factor = gl_window.get_hidpi_factor();
+    let (vp_width, vp_height) = gl_window.get_inner_size()
+        .unwrap()
+        .to_physical(dpi_factor)
+        .into();
+
+    let fb = core::init_framebuffer(
+        buffer_width,
+        buffer_height,
+        vp_width,
+        vp_height,
+    );
 
     MiniGlFb {
         internal: Internal {
