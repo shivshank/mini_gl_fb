@@ -2,7 +2,7 @@
 //!
 //! # Basic Usage
 //!
-//! Start with the function `gotta_go_fast.` This will create a basic window and give you a buffer
+//! Start with the function `gotta_go_fast`. This will create a basic window and give you a buffer
 //! that you can draw to in one line.
 //!
 //! ```rust
@@ -68,9 +68,9 @@ pub extern crate rustic_gl;
 pub extern crate glutin;
 pub extern crate gl;
 
-mod config;
-mod core;
-mod breakout;
+pub mod config;
+pub mod core;
+pub mod breakout;
 
 pub use breakout::GlutinBreakout;
 pub use config::Config;
