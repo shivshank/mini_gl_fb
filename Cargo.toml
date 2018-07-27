@@ -1,11 +1,15 @@
 [package]
 name = "mini_gl_fb"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["shivshank"]
+description = "Tool for quickly creating a window and drawing to a buffer with OpenGL"
+
+license = "MIT"
+
+keywords = ["OpenGL"]
+repository = "https://github.com/shivshank/mini_gl_fb"
 
 [dependencies]
 glutin = "0.17.0"
 gl = "0.10.0"
-
-[dependencies.rustic_gl]
-git = "https://github.com/shivshank/rustic_gl.git"
+rustic_gl = "0.3.2"
