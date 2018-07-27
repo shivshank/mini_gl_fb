@@ -1,4 +1,3 @@
-use config::Config;
 use breakout::GlutinBreakout;
 
 use rustic_gl;
@@ -20,14 +19,19 @@ use gl::types::*;
 use std::ptr::null;
 
 /// Create a context using glutin given a configuration.
-pub fn init_glutin_context<S: ToString>(config: &Config<S>) -> (EventsLoop, GlWindow) {
-    let window_size = LogicalSize::new(config.window_size.0, config.window_size.1);
+pub fn init_glutin_context<S: ToString>(
+    window_title: S,
+    window_width: f64,
+    window_height: f64,
+    resizable: bool,
+) -> (EventsLoop, GlWindow) {
+    let window_size = LogicalSize::new(window_width, window_height);
 
     let events_loop = EventsLoop::new();
     let window = WindowBuilder::new()
-        .with_title(config.window_title.to_string())
+        .with_title(window_title.to_string())
         .with_dimensions(window_size)
-        .with_resizable(config.resizable);
+        .with_resizable(resizable);
 
     let context = ContextBuilder::new();
     let gl_window = GlWindow::new(window, context, &events_loop).unwrap();

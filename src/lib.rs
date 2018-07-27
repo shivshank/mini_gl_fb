@@ -110,7 +110,12 @@ pub fn get_fancy<S: ToString>(config: Config<S>) -> MiniGlFb {
     let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
         else { config.buffer_size.1 };
 
-    let (events_loop, gl_window) = core::init_glutin_context(&config);
+    let (events_loop, gl_window) = core::init_glutin_context(
+        config.window_title,
+        config.window_size.0,
+        config.window_size.1,
+        config.resizable,
+    );
 
     let dpi_factor = gl_window.get_hidpi_factor();
     let (vp_width, vp_height) = gl_window.get_inner_size()
