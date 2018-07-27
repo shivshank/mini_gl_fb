@@ -17,7 +17,7 @@
 //! ```
 //!
 //! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer[0] is the top
-//! left pixel.
+//! left pixel. The buffer should be tightly packed with no padding after each row.
 //!
 //! # Interlude: Library philosophy
 //!
@@ -75,6 +75,8 @@ pub mod breakout;
 pub use breakout::GlutinBreakout;
 pub use config::Config;
 pub use core::{Internal, BufferFormat};
+
+use core::ToGlType;
 
 /// Creates a non resizable window and framebuffer with a given size in pixels.
 ///
@@ -160,6 +162,60 @@ impl MiniGlFb {
     /// The main drawing function.
     pub fn update_buffer<T>(&mut self, image_data: &[T]) {
         self.internal.update_buffer(image_data);
+    }
+
+    /// Changes the format of the image buffer.
+    ///
+    /// OpenGL will interpret any missing components as 0, except the alpha which it will assume is
+    /// 255. For instance, if you set the format to BufferFormat::RG, OpenGL will render every
+    /// pixel reading the two values you passed for the first two components, and then assume 0
+    /// for the blue component, and 255 for the alpha.
+    ///
+    /// If you want to render in grayscale by providing a single component for each pixel, set
+    /// the buffer format to BufferFormat::R, and call `use_grayscale_shader` (which will replace
+    /// the fragment shader with one that sets all components equal to the red component).
+    ///
+    /// The type `T` does not affect how the texture is sampled, only how the buffer you pass is
+    /// interpreted. Since there is no way exposed to change the internal format of the texture,
+    /// (for instance if you wanted to make it an HDR image with floating point components) only
+    /// the types `u8` and `i8` are supported. Open an issue if you have a use case for other
+    /// types.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// fb.change_buffer_format::<u8>(BufferFormat::R);
+    /// fb.use_grayscale_shader();
+    /// ```
+    pub fn change_buffer_format<T: ToGlType>(&mut self, format: BufferFormat) {
+        self.internal.fb.change_buffer_format::<T>(format);
+    }
+
+    /// Resizes the buffer.
+    ///
+    /// This does not affect the size of the window. The texture will be scaled to fit.
+    pub fn resize_buffer(&mut self, buffer_width: u32, buffer_height: u32) {
+        self.internal.fb.resize_buffer(buffer_width, buffer_height);
+    }
+
+    /// Switch to a shader that only uses the first component from your buffer.
+    ///
+    /// This **does not** switch to a shader which converts RGB(A) images to grayscale, for
+    /// instance, by preserving percieved luminance.
+    pub fn use_grayscale_shader(&mut self) {
+        self.internal.fb.use_grayscale_shader();
+    }
+
+    /// Set the size of the OpenGL viewport (does not trigger a redraw).
+    ///
+    /// This does not resize the window or image buffer, only the area to which OpenGL draws. You
+    /// only need to call this function when you are handling events manually and have a resizable
+    /// window.
+    ///
+    /// You will know if you need to call this function, as in that case only part of the window
+    /// will be getting drawn, typically after an update.
+    pub fn resize_viewport(&mut self, width: u32, height: u32) {
+        self.internal.fb.resize_viewport(width, height);
     }
 
     /// Keeps the window open until the user closes it.

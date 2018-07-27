@@ -111,6 +111,9 @@ pub fn init_framebuffer(
         );
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         gl::BindVertexArray(0);
+
+        // So the user doesn't have to consider alignment in their buffer
+        gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
     }
 
     Framebuffer {
@@ -247,21 +250,22 @@ impl Framebuffer {
         self.relink_program();
     }
 
-    // TODO: require passing new image data
-    pub fn change_buffer_format<T: ToGlType>(&mut self, format: BufferFormat) {
+    pub fn use_grayscale_shader(&mut self) {
+        self.use_fragment_shader(include_str!("./grayscale_fragment_shader.glsl"));
+    }
+
+    pub fn change_buffer_format<T: ToGlType>(
+        &mut self,
+        format: BufferFormat,
+    ) {
         self.texture_format = (format, T::to_gl_enum());
     }
 
-    // TODO: resize_buffer
+    pub fn resize_buffer(&mut self, buffer_width: u32, buffer_height: u32) {
+        self.buffer_width = buffer_width as _;
+        self.buffer_height = buffer_height as _;
+    }
 
-    /// Set the size of the OpenGL viewport.
-    ///
-    /// This does not resize the window or image buffer, only the area to which OpenGL draws. You
-    /// only need to call this function when you are handling events manually and have a resizable
-    /// window.
-    ///
-    /// You will know if you need to call this function, as in that case only part of the window
-    /// will be getting drawn, typically after an update.
     pub fn resize_viewport(&mut self, width: u32, height: u32) {
         self.vp_width = width as _;
         self.vp_height = height as _;
