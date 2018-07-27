@@ -107,6 +107,8 @@ pub fn init_framebuffer<S: ToString>(config: &Config<S>) -> Framebuffer {
     Framebuffer {
         buffer_width: buffer_width,
         buffer_height: buffer_height,
+        vp_width: config.window_size.0 as _,
+        vp_height: config.window_size.1 as _,
         program,
         sampler_location,
         vertex_shader: Some(vertex_shader),
@@ -187,6 +189,8 @@ impl Internal {
 pub struct Framebuffer {
     pub buffer_width: i32,
     pub buffer_height: i32,
+    pub vp_width: i32,
+    pub vp_height: i32,
     pub program: GLuint,
     pub sampler_location: GLint,
     pub vertex_shader: Option<GLuint>,
@@ -241,6 +245,19 @@ impl Framebuffer {
 
     // TODO: resize_buffer
 
+    /// Set the size of the OpenGL viewport.
+    ///
+    /// This does not resize the window or image buffer, only the area to which OpenGL draws. You
+    /// only need to call this function when you are handling events manually and have a resizable
+    /// window.
+    ///
+    /// You will know if you need to call this function, as in that case only part of the window
+    /// will be getting drawn, typically after an update.
+    pub fn resize_viewport(&mut self, width: u32, height: u32) {
+        self.vp_width = width as _;
+        self.vp_height = height as _;
+    }
+
     pub fn redraw(&mut self) {
         self.draw(|_| {})
     }
@@ -251,6 +268,7 @@ impl Framebuffer {
     /// You probably want `redraw` (equivalent to `.draw(|_| {})`).
     pub fn draw<F: FnOnce(&Framebuffer)>(&mut self, f: F) {
         unsafe {
+            gl::Viewport(0, 0, self.vp_width, self.vp_height);
             gl::UseProgram(self.program);
             gl::BindVertexArray(self.vao);
             gl::ActiveTexture(0);
