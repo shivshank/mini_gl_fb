@@ -26,6 +26,12 @@ fn main() {
     cells[5 * WIDTH + 11] = true;
     cells[5 * WIDTH + 12] = true;
 
+    cells[50 * WIDTH + 50] = true;
+    cells[51 * WIDTH + 51] = true;
+    cells[52 * WIDTH + 49] = true;
+    cells[52 * WIDTH + 50] = true;
+    cells[52 * WIDTH + 51] = true;
+
     let mut previous = SystemTime::now();
     let mut extra_delay: f64 = 0.0;
 
@@ -129,7 +135,7 @@ fn make_some_babies(cells: &mut [bool], neighbors: &mut [u32]) {
             if neighbors[cell] <= 1 {
                 // die from under population
                 cells[cell] = false;
-            } else if neighbors[cell] >= 3 {
+            } else if neighbors[cell] > 3 {
                 // die from over population
                 cells[cell] = false;
             }
