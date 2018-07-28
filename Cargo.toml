@@ -1,6 +1,6 @@
 [package]
 name = "mini_gl_fb"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["shivshank"]
 description = "Tool for quickly creating a window and drawing to a buffer with OpenGL"
 
