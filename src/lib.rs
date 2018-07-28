@@ -72,9 +72,9 @@ pub mod config;
 pub mod core;
 pub mod breakout;
 
-pub use breakout::GlutinBreakout;
+pub use breakout::{GlutinBreakout, BasicInput};
 pub use config::Config;
-pub use core::{Internal, BufferFormat};
+pub use core::{Internal, BufferFormat, Framebuffer};
 
 use core::ToGlType;
 
@@ -302,6 +302,25 @@ impl MiniGlFb {
     /// See `persist` method documentation for more info.
     pub fn persist_and_redraw(&mut self, redraw: bool) {
         self.internal.persist_and_redraw(redraw);
+    }
+
+    /// Provides an easy interface for rudimentary input handling.
+    ///
+    /// Automatically handles close events and partially handles resizes (the caller chooses if
+    /// a redraw is necessary).
+    ///
+    /// Polls for window events and summarizes the input events for you each frame. See
+    /// `BasicInput` for the information that is provided to you. You will need to use some
+    /// glutin types (which just wraps the crate winit's input types), so glutin is re-expoted
+    /// by this library. You can access it via `use mini_gl_fb::glutin`.
+    ///
+    /// You can cause the handler to exit by returning false from it. This does not kill the
+    /// window, so as long as you still have it in scope, you can actually keep using it and,
+    /// for example, resume handling input but with a different handler callback.
+    pub fn glutin_handle_basic_input<F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
+        &mut self, handler: F
+    ) {
+        self.internal.glutin_handle_basic_input(handler);
     }
 
     /// Need full access to Glutin's event handling? No problem!

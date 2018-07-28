@@ -1,4 +1,4 @@
-use breakout::GlutinBreakout;
+use breakout::{GlutinBreakout, BasicInput};
 
 use rustic_gl;
 
@@ -13,12 +13,13 @@ use glutin::{
     VirtualKeyCode,
     ElementState,
 };
-use glutin::dpi::LogicalSize;
+use glutin::dpi::{LogicalSize, LogicalPosition};
 
 use gl;
 use gl::types::*;
 
 use std::mem::size_of_val;
+use std::collections::HashMap;
 
 /// Create a context using glutin given a configuration.
 pub fn init_glutin_context<S: ToString>(
@@ -132,6 +133,7 @@ pub fn init_framebuffer(
         vao,
         vbo,
         texture_format,
+        did_draw: false,
     }
 }
 
@@ -242,6 +244,83 @@ impl Internal {
         }
     }
 
+    pub fn glutin_handle_basic_input<F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
+        &mut self, mut handler: F
+    ) {
+        let mut running = true;
+        let mut input = BasicInput {
+            // Not sure how to set mouse pos at start
+            mouse_pos: (0, 0),
+            mouse: HashMap::new(),
+            keys: HashMap::new(),
+            modifiers: Default::default(),
+            resized: false,
+        };
+        while running {
+            let mut new_size = None;
+            let mut new_mouse_pos: Option<LogicalPosition> = None;
+            self.events_loop.poll_events(|event| {
+                // Copy the current states into the previous state for input
+                for (_, val) in &mut input.keys {
+                    val.0 = val.1;
+                }
+                for (_, val) in &mut input.mouse {
+                    val.0 = val.1;
+                }
+                match event {
+                    Event::WindowEvent { event, .. } => match event {
+                        WindowEvent::CloseRequested => running = false,
+                        WindowEvent::KeyboardInput { input: event_input, .. } => {
+                            if let Some(vk) = event_input.virtual_keycode {
+                                let key = input.keys.entry(vk)
+                                    .or_insert((false, false));
+                                key.1 = event_input.state == ElementState::Pressed;
+                            }
+                            input.modifiers = event_input.modifiers;
+                        }
+                        WindowEvent::CursorMoved { position, modifiers, ..} => {
+                            new_mouse_pos = Some(position);
+                            input.modifiers = modifiers;
+                        }
+                        WindowEvent::MouseInput { state, button, modifiers, .. } => {
+                            let button = input.mouse.entry(button)
+                                .or_insert((false, false));
+                            button.1 = state == ElementState::Pressed;
+                            input.modifiers = modifiers;
+                        }
+                        WindowEvent::Resized(logical_size) => {
+                            new_size = Some(logical_size);
+                        }
+                        _ => {},
+                    },
+                    _ => {},
+                }
+            });
+            if let Some(size) = new_size {
+                let dpi_factor = self.gl_window.get_hidpi_factor();
+                let (x, y) = size.to_physical(dpi_factor).into();
+                self.resize_viewport(x, y);
+                input.resized = false;
+            }
+            if let Some(pos) = new_mouse_pos {
+                let dpi_factor = self.gl_window.get_hidpi_factor();
+                let (x, y): (f64, f64) = pos.to_physical(dpi_factor).into();
+                let x_scale = self.fb.buffer_width as f64 / (self.fb.vp_width as f64);
+                let y_scale = self.fb.buffer_height as f64 / (self.fb.vp_height as f64);
+                let mouse_pos = ((x * x_scale).floor() as usize, (y * y_scale).floor() as usize);
+                input.mouse_pos = mouse_pos;
+            }
+
+            if running {
+                running = handler(&mut self.fb, &input);
+                if self.fb.did_draw {
+                    self.gl_window.swap_buffers().unwrap();
+                    self.fb.did_draw = false;
+                }
+            }
+        }
+    }
+
     pub fn glutin_breakout(self) -> GlutinBreakout {
         GlutinBreakout {
             events_loop: self.events_loop,
@@ -278,6 +357,7 @@ pub struct Framebuffer {
     pub vao: GLuint,
     pub vbo: GLuint,
     pub texture_format: (BufferFormat, GLenum),
+    pub did_draw: bool,
 }
 
 impl Framebuffer {
@@ -375,6 +455,7 @@ impl Framebuffer {
             gl::BindVertexArray(0);
             gl::UseProgram(0);
         }
+        self.did_draw = true;
     }
 
     pub fn relink_program(&mut self) {
