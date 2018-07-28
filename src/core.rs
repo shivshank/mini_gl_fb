@@ -114,7 +114,7 @@ pub fn init_framebuffer(
         gl::BindVertexArray(0);
 
         // So the user doesn't have to consider alignment in their buffer
-        gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
+        gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
     }
 
     Framebuffer {
@@ -383,7 +383,6 @@ fn create_texture(width: i32, height: i32, format: BufferFormat, buffer_kind: GL
             panic!();
         }
         gl::BindTexture(gl::TEXTURE_2D, tex);
-        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as _, width, height, 0, format as GLenum, buffer_kind, null());
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as _);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as _);
         gl::BindTexture(gl::TEXTURE_2D, 0);
