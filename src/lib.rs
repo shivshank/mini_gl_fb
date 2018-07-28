@@ -213,6 +213,8 @@ impl MiniGlFb {
 
     /// Set the size of the OpenGL viewport (does not trigger a redraw).
     ///
+    /// For high DPI screens this is the physical size of the viewport.
+    ///
     /// This does not resize the window or image buffer, only the area to which OpenGL draws. You
     /// only need to call this function when you are handling events manually and have a resizable
     /// window.
@@ -223,7 +225,19 @@ impl MiniGlFb {
         self.internal.fb.resize_viewport(width, height);
     }
 
+    /// Set whether or not the window is resizable.
+    ///
+    /// Please note that if you are handling events yourself that you need to call
+    /// `resize_viewport` when the window is resized, otherwise the buffer will only be drawn to
+    /// a small portion of the window.
+    pub fn set_resizable(&mut self, resizable: bool) {
+        self.internal.set_resizable(resizable);
+    }
+
     /// Keeps the window open until the user closes it.
+    ///
+    /// Supports pressing escape to quit. Automatically scales the rendered buffer to the size of
+    /// the window if the window is resiable (but this does not resize the buffer).
     pub fn persist(&mut self) {
         self.internal.persist();
     }
@@ -231,6 +245,8 @@ impl MiniGlFb {
     /// `persist` implementation.
     ///
     /// When redraw is true, redraws as fast as possible. This function is primarily for debugging.
+    ///
+    /// See `persist` method documentation for more info.
     pub fn persist_and_redraw(&mut self, redraw: bool) {
         self.internal.persist_and_redraw(redraw);
     }
@@ -246,6 +262,4 @@ impl MiniGlFb {
     pub fn glutin_breakout(self) -> GlutinBreakout {
         self.internal.glutin_breakout()
     }
-
-    // TODO: set_resizable
 }

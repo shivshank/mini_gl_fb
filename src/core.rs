@@ -10,13 +10,14 @@ use glutin::{
     GlContext,
     Event,
     WindowEvent,
+    VirtualKeyCode,
+    ElementState,
 };
 use glutin::dpi::LogicalSize;
 
 use gl;
 use gl::types::*;
 
-use std::ptr::null;
 use std::mem::size_of_val;
 
 /// Create a context using glutin given a configuration.
@@ -154,6 +155,15 @@ impl Internal {
         self.gl_window.swap_buffers().unwrap();
     }
 
+    pub fn set_resizable(&mut self, resizable: bool) {
+        self.gl_window.set_resizable(resizable);
+    }
+
+    pub fn resize_viewport(&mut self, width: u32, height: u32) {
+        self.gl_window.resize((width, height).into());
+        self.fb.resize_viewport(width, height);
+    }
+
     pub fn persist(&mut self) {
         self.persist_and_redraw(false);
     }
@@ -161,18 +171,39 @@ impl Internal {
     pub fn persist_and_redraw(&mut self, redraw: bool) {
         let mut running = true;
         while running {
+            let mut new_size = None;
             self.events_loop.poll_events(|event| {
                 match event {
                     Event::WindowEvent { event, .. } => match event {
                         WindowEvent::CloseRequested => running = false,
+                        WindowEvent::KeyboardInput { input, .. } => {
+                            if let Some(k) = input.virtual_keycode {
+                                if k == VirtualKeyCode::Escape
+                                        && input.state == ElementState::Released {
+                                    running = false;
+                                }
+                            }
+                        }
+                        WindowEvent::Resized(logical_size) => {
+                            new_size = Some(logical_size);
+                        }
                         _ => {},
                     },
                     _ => {},
                 }
             });
-            if redraw {
+            if let Some(size) = new_size {
+                let dpi_factor = self.gl_window.get_hidpi_factor();
+                let (x, y) = size.to_physical(dpi_factor).into();
+                self.resize_viewport(x, y);
+
                 self.fb.redraw();
                 self.gl_window.swap_buffers().unwrap();
+            } else {
+                if redraw {
+                    self.fb.redraw();
+                    self.gl_window.swap_buffers().unwrap();
+                }
             }
         }
     }
