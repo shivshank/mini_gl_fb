@@ -51,8 +51,6 @@ See the docs for more info.
 
 Listed in rough order of importance and ease (which are surprisingly correlated here!).
 
- - Bounds check on `update_buffer` which will currently segfault if you pass the wrong size.
-
  - Shader playground. Add a method for using shadertoy-like fragment shaders to be applied to
     your submitted pixel data.
 

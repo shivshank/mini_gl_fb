@@ -160,6 +160,11 @@ impl MiniGlFb {
     /// Updates the backing buffer and draws immediately (swaps buffers).
     ///
     /// The main drawing function.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the size of the buffer does not exactly match the correct size of the texture
+    /// data required based on the buffers format.
     pub fn update_buffer<T>(&mut self, image_data: &[T]) {
         self.internal.update_buffer(image_data);
     }

@@ -17,6 +17,7 @@ use gl;
 use gl::types::*;
 
 use std::ptr::null;
+use std::mem::size_of_val;
 
 /// Create a context using glutin given a configuration.
 pub fn init_glutin_context<S: ToString>(
@@ -216,10 +217,22 @@ pub struct Framebuffer {
 
 impl Framebuffer {
     pub fn update_buffer<T>(&mut self, image_data: &[T]) {
-        // TODO: Safety check on the length of the passed slice so this is actually a safe method
+        // Check the length of the passed slice so this is actually a safe method.
+        let (format, kind) = self.texture_format;
+        let expected_size_in_bytes = size_of_gl_type_enum(kind)
+            * format.components()
+            * self.buffer_width as usize
+            * self.buffer_height as usize;
+        let actual_size_in_bytes = size_of_val(image_data);
+        if actual_size_in_bytes != expected_size_in_bytes {
+            panic!(
+                "Expected a buffer of {} bytes, instead recieved one of {} bytes",
+                expected_size_in_bytes,
+                actual_size_in_bytes
+            );
+        }
         self.draw(|fb| {
             unsafe {
-                let (format, kind) = fb.texture_format;
                 gl::TexImage2D(
                     gl::TEXTURE_2D,
                     0,
@@ -317,6 +330,18 @@ pub enum BufferFormat {
     BGRA = gl::BGRA,
 }
 
+impl BufferFormat {
+    fn components(&self) -> usize {
+        use self::BufferFormat::*;
+        match self {
+            R => 1,
+            RG => 2,
+            RGB | BGR => 3,
+            RGBA | BGRA => 4,
+        }
+    }
+}
+
 pub trait ToGlType {
     fn to_gl_enum() -> GLenum;
 }
@@ -341,6 +366,13 @@ impl_ToGlType!(
     u8, gl::UNSIGNED_BYTE,
     i8, gl::BYTE,
 );
+
+fn size_of_gl_type_enum(gl_enum: GLenum) -> usize {
+    match gl_enum {
+        gl::UNSIGNED_BYTE | gl::BYTE => 1,
+        _ => panic!("Must pass a GL enum representing a type"),
+    }
+}
 
 fn create_texture(width: i32, height: i32, format: BufferFormat, buffer_kind: GLenum) -> GLuint {
     unsafe {
