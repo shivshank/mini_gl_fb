@@ -188,6 +188,40 @@ impl MiniGlFb {
         self.internal.redraw();
     }
 
+    /// Use a custom post process shader written in GLSL (version 330 core).
+    ///
+    /// The interface is unapologetically similar to ShaderToy's. It works by inserting your code
+    /// (it is implemented as literal substitution) into a supplied fragment shader and calls
+    /// a function `main_image` that it assumes you define.
+    ///
+    /// # Example usage
+    ///
+    /// The behavior of the default fragment shader can be emulated by the following:
+    ///
+    /// ```rust
+    /// fb.use_post_process_shader("
+    ///     void main_image( out vec4 r_frag_color, in vec2 v_uv ) {
+    ///         r_frag_color = texture(u_buffer, v_uv);
+    ///     }
+    /// ");
+    /// ```
+    ///
+    /// Regardless of the format of your buffer, the internal texture is always stored as RGBA,
+    /// so sampling u_buffer will yield a vec4 representing an RGBA color. The built in grayscale
+    /// shader, for instance, only stores Red components, and then uses the red component for the
+    /// green and blue components to create gray.
+    ///
+    /// The output color is determined by the value of the first output parameter, `r_frag_color`.
+    /// Your buffer is accessible as a 2D sampler uniform named `u_buffer`. The first input
+    /// parameter `v_uv` is a vec2 UV coordinate. UV (0, 0) represents the upper left of the screen
+    /// and (1, 1) represents the bottom right.
+    ///
+    /// An API for exposing more built in and custom uniforms is planned, along with support for
+    /// an arbitrary number of render targets and possibly more user supplied textures.
+    pub fn use_post_process_shader(&mut self, source: &str) {
+        self.internal.fb.use_post_process_shader(source);
+    }
+
     /// Changes the format of the image buffer.
     ///
     /// OpenGL will interpret any missing components as 0, except the alpha which it will assume is

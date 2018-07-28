@@ -79,7 +79,7 @@ pub fn init_framebuffer(
     };
 
     let sampler_location = unsafe {
-        let location = gl::GetUniformLocation(program, b"u_tex0\0".as_ptr() as *const _);
+        let location = gl::GetUniformLocation(program, b"u_buffer\0".as_ptr() as *const _);
         gl::UseProgram(program);
         gl::Uniform1i(location, 0);
         gl::UseProgram(0);
@@ -323,6 +323,11 @@ impl Framebuffer {
         self.relink_program();
     }
 
+    pub fn use_post_process_shader(&mut self, source: &str) {
+        let source = make_post_process_shader(source);
+        self.use_fragment_shader(&source);
+    }
+
     pub fn use_geometry_shader(&mut self, source: &str) {
         rebuild_shader(&mut self.geometry_shader, gl::GEOMETRY_SHADER, source);
         self.relink_program();
@@ -453,6 +458,27 @@ fn create_texture() -> GLuint {
         gl::BindTexture(gl::TEXTURE_2D, 0);
         tex
     }
+}
+
+fn make_post_process_shader(source: &str) -> String {
+    format!(
+        "
+            #version 330 core
+
+            in vec2 v_uv;
+
+            out vec4 r_frag_color;
+
+            uniform sampler2D u_buffer;
+
+            {}
+
+            void main() {{
+                main_image(r_frag_color, v_uv);
+            }}
+        ",
+        source,
+    )
 }
 
 fn rebuild_shader(shader: &mut Option<GLuint>, kind: GLenum, source: &str) {
