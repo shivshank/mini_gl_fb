@@ -24,6 +24,65 @@ fn main() {
 time. You can bring your own timing mechanism, whether it's just `sleep(ms)` or something more
 sophisticated.
 
+# Support for simplified basic input handling
+
+Get access to mouse position and key inputs with no hassle. The following is extracted from the
+Game of Life example:
+
+```rust
+
+let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
+
+// ...
+
+fb.glutin_handle_basic_input(|fb, input| {
+    let elapsed = previous.elapsed().unwrap();
+    let seconds = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
+
+    if input.key_is_down(VirtualKeyCode::Escape) {
+        return false;
+    }
+
+    if input.mouse_is_down(MouseButton::Left) {
+        // Mouse was pressed
+        let (x, y) = input.mouse_pos;
+        cells[y * WIDTH + x] = true;
+        fb.update_buffer(&cells);
+        // Give the user extra time to make something pretty each time they click
+        previous = SystemTime::now();
+        extra_delay = (extra_delay + 0.5).min(2.0);
+    }
+
+    // Each generation should stay on screen for half a second
+    if seconds > 0.5 + extra_delay {
+        previous = SystemTime::now();
+        calculate_neighbors(&mut cells, &mut neighbors);
+        make_some_babies(&mut cells, &mut neighbors);
+        fb.update_buffer(&cells);
+        extra_delay = 0.0;
+    } else if input.resized {
+        fb.redraw();
+    }
+
+    true
+});
+```
+
+# Shader playground
+
+Post process with GLSL shaders inspired by ShaderToy. This is a work in progress but there is
+basic support for simple effects. The following is the default behavior but illustrates the
+API:
+
+```rust
+fb.use_post_process_shader("
+void main_image( out vec4 r_frag_color, in vec2 v_uv ) {
+    r_frag_color = texture(u_buffer, v_uv);
+}
+");
+```
+
 # Get full access to glutin for custom event handling
 
 You can also "breakout" and get access to the underlying glutin window while still having easy
@@ -51,20 +110,17 @@ fb.update_buffer(/*...*/);
 
 See the [docs](https://docs.rs/mini_gl_fb/) for more info.
 
-# Planned Features
+# Planned Features (depends on demand)
 
-Listed in rough order of importance and ease (which are surprisingly correlated here!).
+Feel free to open an issue if you have a suggestion or want to see one of these soon!
 
- - Shader playground. Add a method for using shadertoy-like fragment shaders to be applied to
-    your submitted pixel data.
+ - More simplified input handling methods
 
- - Some built in managed ways of getting interactivity, possibly such as a functional reactive
-    style draw function that renders based on a provided Store struct. Other simpler
-    alternatives include automatically drawing after running some event handlers and some
-    methods for drawing at intervals (fixed/dynamic delta time).
+ - Enhanced and more thorough shader playground
 
- - Fully replace and customize the vertex, geometry, and fragment shader, including adding your
-    own uniforms (but probably not adding any vertex attributes).
+ - Support for running ShaderToy examples directly (a conversion function)
 
  - Support for more textures, possibly actual OpenGL framebuffers for complex sequences of
-    post processing. I am undecided on whether this is appropriate for this library.
+    post processing
+
+ - An HTML canvas-like API that allows drawing over your buffer

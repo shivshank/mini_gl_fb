@@ -3,7 +3,7 @@
 //! # Basic Usage
 //!
 //! Start with the function `gotta_go_fast`. This will create a basic window and give you a buffer
-//! that you can draw to in one line.
+//! that you can draw to in one line. The main public API is available through the `MiniGlFb` type.
 //!
 //! ```rust
 //! extern crate mini_gl_fb;

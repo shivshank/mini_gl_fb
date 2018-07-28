@@ -1,6 +1,7 @@
 extern crate mini_gl_fb;
 
 use mini_gl_fb::{Config, BufferFormat};
+use mini_gl_fb::glutin::{MouseButton, VirtualKeyCode};
 
 use std::time::SystemTime;
 
@@ -26,21 +27,39 @@ fn main() {
     cells[5 * WIDTH + 12] = true;
 
     let mut previous = SystemTime::now();
+    let mut extra_delay: f64 = 0.0;
 
-    while fb.is_running() {
+    fb.glutin_handle_basic_input(|fb, input| {
         let elapsed = previous.elapsed().unwrap();
         let seconds = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
 
+        if input.key_is_down(VirtualKeyCode::Escape) {
+            return false;
+        }
+
+        if input.mouse_is_down(MouseButton::Left) {
+            // Mouse was pressed
+            let (x, y) = input.mouse_pos;
+            cells[y * WIDTH + x] = true;
+            fb.update_buffer(&cells);
+            // Give the user extra time to make something pretty each time they click
+            previous = SystemTime::now();
+            extra_delay = (extra_delay + 0.5).min(2.0);
+        }
+
         // Each generation should stay on screen for half a second
-        if seconds > 0.5 {
+        if seconds > 0.5 + extra_delay {
             previous = SystemTime::now();
             calculate_neighbors(&mut cells, &mut neighbors);
             make_some_babies(&mut cells, &mut neighbors);
-            // Vsync should be enabled by default (open an issue if you need it disabled)
-            // Vsync should cause this to block so we don't run too often or too fast #robust
             fb.update_buffer(&cells);
+            extra_delay = 0.0;
+        } else if input.resized {
+            fb.redraw();
         }
-    }
+
+        true
+    });
 }
 
 fn calculate_neighbors(cells: &mut [bool], neighbors: &mut [u32]) {
