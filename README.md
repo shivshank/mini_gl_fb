@@ -1,5 +1,8 @@
 # Mini GL "Framebuffer"
 
+[![Version](https://img.shields.io/crates/v/mini_gl_fb.svg)](https://crates.io/crates/mini_gl_fb)
+[![Docs.rs](https://docs.rs/mini_gl_fb/badge.svg)](https://docs.rs/mini_gl_fb)
+
 Provides an easy way to draw a window from a pixel buffer. OpenGL alternative to other
 easy framebuffer libraries.
 
@@ -40,12 +43,13 @@ fb.update_buffer(/*...*/);
 
 # Other features
 
+ - Black and white rendering, specifying one byte per pixel
  - Hardware accelerated buffer scaling (window and buffer can have different sizes)
  - Exposes a function for creating a context with glutin in one line
  - Exposes a function for creating a VAO, VBO, quad, and blank texture in one line
  - If you don't want to use glutin you can **bring your own context** too!
 
-See the docs for more info.
+See the [docs](https://docs.rs/mini_gl_fb/) for more info.
 
 # Planned Features
 
