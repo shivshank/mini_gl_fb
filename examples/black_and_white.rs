@@ -16,5 +16,5 @@ fn main() {
     let buffer = [128u8, 255, 50, 25];
     fb.update_buffer(&buffer);
 
-    fb.persist_and_redraw(true);
+    fb.persist();
 }
