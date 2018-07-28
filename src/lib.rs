@@ -169,6 +169,25 @@ impl MiniGlFb {
         self.internal.update_buffer(image_data);
     }
 
+    /// Checks if escape has been pressed or the window has been asked to close.
+    ///
+    /// This function is a good choice for a while loop condition when you are making a simulation
+    /// that needs to progress over time but does not need to handle user input.
+    ///
+    /// Calling this function clears the event queue and also handles resizes for you (if your
+    /// window is resizable). This does not resize the image buffer; the rendered buffer will
+    /// instead scale to fit the window.
+    ///
+    /// Please note that if your window does change size, for buffer to appear scaled it must
+    /// be redrawn, typically either by calling `redraw` or `update_buffer`.
+    pub fn is_running(&mut self) -> bool {
+        self.internal.is_running()
+    }
+
+    pub fn redraw(&mut self) {
+        self.internal.redraw();
+    }
+
     /// Changes the format of the image buffer.
     ///
     /// OpenGL will interpret any missing components as 0, except the alpha which it will assume is

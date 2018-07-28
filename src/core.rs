@@ -164,6 +164,42 @@ impl Internal {
         self.fb.resize_viewport(width, height);
     }
 
+    pub fn is_running(&mut self) -> bool {
+        let mut running = true;
+        let mut resized = None;
+        self.events_loop.poll_events(|event| {
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::CloseRequested => running = false,
+                    WindowEvent::KeyboardInput { input, .. } => {
+                        if let Some(k) = input.virtual_keycode {
+                            if k == VirtualKeyCode::Escape
+                                    && input.state == ElementState::Released {
+                                running = false;
+                            }
+                        }
+                    }
+                    WindowEvent::Resized(logical_size) => {
+                        resized = Some(logical_size);
+                    }
+                    _ => {},
+                },
+                _ => {},
+            }
+        });
+        if let Some(size) = resized {
+            let dpi_factor = self.gl_window.get_hidpi_factor();
+            let (x, y) = size.to_physical(dpi_factor).into();
+            self.resize_viewport(x, y);
+        }
+        running
+    }
+
+    pub fn redraw(&mut self) {
+        self.fb.redraw();
+        self.gl_window.swap_buffers().unwrap();
+    }
+
     pub fn persist(&mut self) {
         self.persist_and_redraw(false);
     }
@@ -196,9 +232,7 @@ impl Internal {
                 let dpi_factor = self.gl_window.get_hidpi_factor();
                 let (x, y) = size.to_physical(dpi_factor).into();
                 self.resize_viewport(x, y);
-
-                self.fb.redraw();
-                self.gl_window.swap_buffers().unwrap();
+                self.redraw();
             } else {
                 if redraw {
                     self.fb.redraw();
