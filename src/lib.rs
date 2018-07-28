@@ -247,7 +247,5 @@ impl MiniGlFb {
         self.internal.glutin_breakout()
     }
 
-    // TODO: resize_buffer
     // TODO: set_resizable
-    // TODO: change_buffer_format
 }
