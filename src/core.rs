@@ -87,7 +87,7 @@ pub fn init_framebuffer(
     };
 
     let texture_format = (BufferFormat::RGBA, gl::UNSIGNED_BYTE);
-    let texture = create_texture(buffer_width, buffer_height, texture_format.0, texture_format.1);
+    let texture = create_texture();
 
     let vao = rustic_gl::raw::create_vao().unwrap();
     let vbo = rustic_gl::raw::create_buffer().unwrap();
@@ -405,7 +405,7 @@ fn size_of_gl_type_enum(gl_enum: GLenum) -> usize {
     }
 }
 
-fn create_texture(width: i32, height: i32, format: BufferFormat, buffer_kind: GLenum) -> GLuint {
+fn create_texture() -> GLuint {
     unsafe {
         let mut tex = 0;
         gl::GenTextures(1, &mut tex);
