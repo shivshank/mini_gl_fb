@@ -99,12 +99,12 @@ pub fn init_framebuffer(
         VertexFormat::declare(0);
 
         let verts: [[f32; 2]; 12] = [
-            [-1., 1.], [0., 0.], // top left
-            [-1., -1.], [0., 1.], // bottom left
-            [1., -1.], [1., 1.], // bottom right
-            [1., -1.], [1., 1.], // bottom right
-            [1., 1.], [1., 0.], // top right
-            [-1., 1.], [0., 0.], // top left
+            [-1., 1.], [0., 1.], // top left
+            [-1., -1.], [0., 0.], // bottom left
+            [1., -1.], [1., 0.], // bottom right
+            [1., -1.], [1., 0.], // bottom right
+            [1., 1.], [1., 1.], // top right
+            [-1., 1.], [0., 1.], // top left
         ];
         use std::mem::size_of_val;
         gl::BufferData(gl::ARRAY_BUFFER,

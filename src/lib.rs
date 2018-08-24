@@ -16,7 +16,7 @@
 //! }
 //! ```
 //!
-//! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer[0] is the top
+//! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer[0] is the bottom
 //! left pixel. The buffer should be tightly packed with no padding after each row.
 //!
 //! # Interlude: Library philosophy
@@ -213,8 +213,8 @@ impl MiniGlFb {
     ///
     /// The output color is determined by the value of the first output parameter, `r_frag_color`.
     /// Your buffer is accessible as a 2D sampler uniform named `u_buffer`. The first input
-    /// parameter `v_uv` is a vec2 UV coordinate. UV (0, 0) represents the upper left of the screen
-    /// and (1, 1) represents the bottom right.
+    /// parameter `v_uv` is a vec2 UV coordinate. UV (0, 0) represents the bottom left of the
+    /// screen and (1, 1) represents the top right.
     ///
     /// An API for exposing more built in and custom uniforms is planned, along with support for
     /// an arbitrary number of render targets and possibly more user supplied textures.
