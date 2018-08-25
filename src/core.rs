@@ -307,7 +307,11 @@ impl Internal {
                 let (x, y): (f64, f64) = pos.to_physical(dpi_factor).into();
                 let x_scale = self.fb.buffer_width as f64 / (self.fb.vp_width as f64);
                 let y_scale = self.fb.buffer_height as f64 / (self.fb.vp_height as f64);
-                let mouse_pos = ((x * x_scale).floor() as usize, (y * y_scale).floor() as usize);
+                let mut mouse_pos = (
+                    (x * x_scale).floor() as usize,
+                    // use the OpenGL texture coordinate system instead of window coordinates
+                    (self.fb.buffer_height as f64 - y * y_scale).floor() as usize
+                );
                 input.mouse_pos = mouse_pos;
             }
 

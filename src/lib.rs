@@ -307,7 +307,8 @@ impl MiniGlFb {
     /// Provides an easy interface for rudimentary input handling.
     ///
     /// Automatically handles close events and partially handles resizes (the caller chooses if
-    /// a redraw is necessary).
+    /// a redraw is necessary; and the window will only actually physically change size if it is
+    /// a resizable window).
     ///
     /// Polls for window events and summarizes the input events for you each frame. See
     /// `BasicInput` for the information that is provided to you. You will need to use some

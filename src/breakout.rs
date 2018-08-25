@@ -16,7 +16,9 @@ pub struct GlutinBreakout {
 }
 
 pub struct BasicInput {
-    /// The mouse position in buffer coordinates
+    /// The mouse position in buffer coordinates.
+    ///
+    /// The bottom left of the window is (0, 0).
     pub mouse_pos: (usize, usize),
     /// Stores whether a mouse button was down and is down, in that order.
     ///
