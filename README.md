@@ -1,13 +1,17 @@
-# Mini GL "Framebuffer"
+# Mini GL "Framebuffer" (MGlFb)
 
 [![Version](https://img.shields.io/crates/v/mini_gl_fb.svg)](https://crates.io/crates/mini_gl_fb)
 [![Docs.rs](https://docs.rs/mini_gl_fb/badge.svg)](https://docs.rs/mini_gl_fb)
 
-Provides an easy way to draw a window from a pixel buffer. OpenGL alternative to other
-easy framebuffer libraries.
+Mini GL Framebuffer provides an easy way to draw to a window from a pixel buffer. OpenGL
+alternative to other easy framebuffer libraries.
 
-Designed to be dead simple and easy to remember when you just want to get something on the
-screen ASAP!
+It's designed to be dead simple and easy to remember when you just want to get something on the
+screen ASAP. It's also built to be super flexible and easy to grow out of in case your project
+gets serious (MGlFb exposes all of its internals so you can iteratively remove it as a
+dependency over time!).
+
+# Usage
 
 ```rust
 extern crate mini_gl_fb;
@@ -24,7 +28,7 @@ fn main() {
 time. You can bring your own timing mechanism, whether it's just `sleep(ms)` or something more
 sophisticated.
 
-# Support for simplified basic input handling
+# Support for quick and easy, simple input handling
 
 Get access to mouse position and key inputs with no hassle. The following is extracted from the
 Game of Life example:
@@ -83,7 +87,7 @@ void main_image( out vec4 r_frag_color, in vec2 v_uv ) {
 ");
 ```
 
-# Get full access to glutin for custom event handling
+# Get full access to glutin/winit for custom event handling
 
 You can also "breakout" and get access to the underlying glutin window while still having easy
 setup:
@@ -114,7 +118,7 @@ See the [docs](https://docs.rs/mini_gl_fb/) for more info.
 
 Feel free to open an issue if you have a suggestion or want to see one of these soon!
 
- - More simplified input handling methods
+ - More kinds of simplified input handling methods
 
  - Enhanced and more thorough shader playground
 
@@ -123,4 +127,4 @@ Feel free to open an issue if you have a suggestion or want to see one of these 
  - Support for more textures, possibly actual OpenGL framebuffers for complex sequences of
     post processing
 
- - An HTML canvas-like API that allows drawing over your buffer
+ - An HTML canvas-like API that allows drawing over your buffer???
