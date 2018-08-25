@@ -234,6 +234,8 @@ impl Internal {
                 let dpi_factor = self.gl_window.get_hidpi_factor();
                 let (x, y) = size.to_physical(dpi_factor).into();
                 self.resize_viewport(x, y);
+                // TODO: We should store window size in BasicInput, but as what type? OpenGL wants
+                // integer window sizes but we also have to deal with physical vs. logical size
                 self.redraw();
             } else {
                 if redraw {

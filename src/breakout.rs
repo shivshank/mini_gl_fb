@@ -38,6 +38,8 @@ pub struct BasicInput {
 }
 
 impl BasicInput {
+    // TODO: Do we want to add a `mouse_as_buffer_index` or method or something like that?
+
     /// If the mouse was pressed this last frame.
     pub fn mouse_pressed(&self, button: MouseButton) -> bool {
         &(false, true) == self.mouse.get(&button).unwrap_or(&(false, false))
