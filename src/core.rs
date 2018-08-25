@@ -250,7 +250,7 @@ impl Internal {
         let mut running = true;
         let mut input = BasicInput {
             // Not sure how to set mouse pos at start
-            mouse_pos: (0, 0),
+            mouse_pos: (0.0, 0.0),
             mouse: HashMap::new(),
             keys: HashMap::new(),
             modifiers: Default::default(),
@@ -307,10 +307,10 @@ impl Internal {
                 let (x, y): (f64, f64) = pos.to_physical(dpi_factor).into();
                 let x_scale = self.fb.buffer_width as f64 / (self.fb.vp_width as f64);
                 let y_scale = self.fb.buffer_height as f64 / (self.fb.vp_height as f64);
-                let mut mouse_pos = (
-                    (x * x_scale).floor() as usize,
+                let mouse_pos = (
+                    x * x_scale,
                     // use the OpenGL texture coordinate system instead of window coordinates
-                    (self.fb.buffer_height as f64 - y * y_scale).floor() as usize
+                    self.fb.buffer_height as f64 - y * y_scale
                 );
                 input.mouse_pos = mouse_pos;
             }

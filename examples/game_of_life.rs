@@ -4,7 +4,6 @@ use mini_gl_fb::{Config, BufferFormat};
 use mini_gl_fb::glutin::{MouseButton, VirtualKeyCode};
 
 use std::time::SystemTime;
-use std::cmp;
 
 const WIDTH: usize = 200;
 const HEIGHT: usize = 200;
@@ -46,9 +45,9 @@ fn main() {
 
         if input.mouse_is_down(MouseButton::Left) {
             // Mouse was pressed
-            let (mut x, mut y) = input.mouse_pos;
-            x = cmp::min(x, WIDTH - 1);
-            y = cmp::min(y, HEIGHT - 1);
+            let (x, y) = input.mouse_pos;
+            let x = x.min(WIDTH as f64 - 0.0001).max(0.0).floor() as usize;
+            let y = y.min(HEIGHT as f64 - 0.0001).max(0.0).floor() as usize;
             cells[y * WIDTH + x] = true;
             fb.update_buffer(&cells);
             // Give the user extra time to make something pretty each time they click

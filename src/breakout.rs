@@ -18,8 +18,13 @@ pub struct GlutinBreakout {
 pub struct BasicInput {
     /// The mouse position in buffer coordinates.
     ///
-    /// The bottom left of the window is (0, 0).
-    pub mouse_pos: (usize, usize),
+    /// The bottom left of the window is (0, 0). Pixel centers are at multiples of (0.5, 0.5). If
+    /// you want to use this to index into your buffer, in general the following is sufficient:
+    ///
+    /// - clamp each coordinate to the half-open range [0.0, buffer_size)
+    /// - take the floor of each component
+    /// - cast to usize and compute an index: `let index = y * WIDTH + x`
+    pub mouse_pos: (f64, f64),
     /// Stores whether a mouse button was down and is down, in that order.
     ///
     /// If a button has not been pressed yet it will not be in the map.
