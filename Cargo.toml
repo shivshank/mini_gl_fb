@@ -1,6 +1,6 @@
 [package]
 name = "mini_gl_fb"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["shivshank"]
 description = "Quick and easy window creation, input, and high speed bitmap rendering"
 repository = "https://github.com/shivshank/mini_gl_fb"
@@ -8,7 +8,7 @@ repository = "https://github.com/shivshank/mini_gl_fb"
 license = "MIT"
 
 keywords = ["opengl", "windowing", "framebuffer", "window"]
-categories = ["rendering", "graphics"]
+categories = ["rendering"]
 readme = "README.md"
 
 [dependencies]
