@@ -2,13 +2,15 @@
 ///
 /// The following pattern is reccomended when creating a config:
 ///
-/// ```rust
-/// let config = Config {
+/// ```
+/// use mini_gl_fb::Config;
+///
+/// let config: Config<&str> = Config {
 ///     /* specify whichever fields you need to set, for example: */
 ///     window_size: (100.0, 100.0),
 ///     resizable: false,
 ///     .. Default::default()
-/// }
+/// };
 /// ```
 ///
 /// If there's a config option you want to see or think is missing, please open an issue!

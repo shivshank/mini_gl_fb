@@ -39,6 +39,11 @@
 //! you to, for instance, create a window with a buffer of a different size than the window.
 //!
 //! ```rust
+//! use mini_gl_fb::{get_fancy, Config};
+//! # let window_title = "foo";
+//! # let window_width = 800.0;
+//! # let window_height = 600.0;
+//!
 //! let config = Config {
 //!    window_title: window_title.to_string(),
 //!    window_size: (window_width, window_height),
@@ -199,6 +204,8 @@ impl MiniGlFb {
     /// The behavior of the default fragment shader can be emulated by the following:
     ///
     /// ```rust
+    /// # use mini_gl_fb::get_fancy;
+    /// # let mut fb = get_fancy::<&str>(Default::default());
     /// fb.use_post_process_shader("
     ///     void main_image( out vec4 r_frag_color, in vec2 v_uv ) {
     ///         r_frag_color = texture(u_buffer, v_uv);
@@ -242,6 +249,10 @@ impl MiniGlFb {
     /// # Example
     ///
     /// ```rust
+    /// use mini_gl_fb::BufferFormat;
+    /// # use mini_gl_fb::get_fancy;
+    /// # let mut fb = get_fancy::<&str>(Default::default());
+    ///
     /// fb.change_buffer_format::<u8>(BufferFormat::R);
     /// fb.use_grayscale_shader();
     /// ```
