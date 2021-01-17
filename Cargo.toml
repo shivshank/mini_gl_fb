@@ -13,5 +13,5 @@ readme = "README.md"
 
 [dependencies]
 glutin = "0.26.0"
-gl = "0.14.0"
+gl = "0.10.0"
 rustic_gl = "0.3.2"
