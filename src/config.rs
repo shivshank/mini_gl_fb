@@ -1,5 +1,3 @@
-use glutin::event_loop::EventLoop;
-
 /// Configuration for "advanced" use cases, when `gotta_go_fast` isn't doing what you need.
 ///
 /// The following pattern is recommended when creating a config:
@@ -7,7 +5,7 @@ use glutin::event_loop::EventLoop;
 /// ```
 /// use mini_gl_fb::Config;
 ///
-/// let config: Config<&str, ()> = Config {
+/// let config: Config<&str> = Config {
 ///     /* specify whichever fields you need to set, for example: */
 ///     window_size: (100.0, 100.0),
 ///     resizable: false,
@@ -16,7 +14,7 @@ use glutin::event_loop::EventLoop;
 /// ```
 ///
 /// If there's a config option you want to see or think is missing, please open an issue!
-pub struct Config<S: ToString, ET: 'static> {
+pub struct Config<S: ToString> {
     /// Sets the pixel dimensions of the buffer. The buffer will automatically scale to the size of
     /// the window. By default this will be the same as the window_size.
     pub buffer_size: (u32, u32),
@@ -24,32 +22,29 @@ pub struct Config<S: ToString, ET: 'static> {
     /// managed by mini_gl_fb.
     pub resizable: bool,
     pub window_title: S,
-    pub window_size: (f64, f64),
-    pub event_loop: EventLoop<ET>
+    pub window_size: (f64, f64)
 }
 
-impl<'a> Default for Config<&'a str, ()> {
+impl<'a> Default for Config<&'a str> {
     fn default() -> Self {
         Config {
             buffer_size: (0, 0),
             resizable: false,
             // :^)
             window_title: "Super Mini GL Framebufferer 3!",
-            window_size: (600.0, 480.0),
-            event_loop: EventLoop::new()
+            window_size: (600.0, 480.0)
         }
     }
 }
 
-impl Default for Config<String, ()> {
+impl Default for Config<String> {
     fn default() -> Self {
         Config {
             buffer_size: (0, 0),
             resizable: false,
             // :^)
             window_title: "Super Mini GL Framebufferer 3!".to_string(),
-            window_size: (600.0, 480.0),
-            event_loop: EventLoop::new()
+            window_size: (600.0, 480.0)
         }
     }
 }

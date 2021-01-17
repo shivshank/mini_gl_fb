@@ -82,6 +82,7 @@ pub use config::Config;
 pub use core::{Internal, BufferFormat, Framebuffer};
 
 use core::ToGlType;
+use glutin::event_loop::EventLoop;
 
 /// Creates a non resizable window and framebuffer with a given size in pixels.
 ///
@@ -92,14 +93,16 @@ pub fn gotta_go_fast<S: ToString>(
     window_title: S,
     window_width: f64,
     window_height: f64
-) -> MiniGlFb<()> {
+) -> (EventLoop<()>, MiniGlFb) {
+    let event_loop = EventLoop::new();
     let config = Config {
         window_title: window_title.to_string(),
         window_size: (window_width, window_height),
         resizable: false,
         .. Default::default()
     };
-    get_fancy(config)
+    let fancy = get_fancy(config, &event_loop);
+    (event_loop, fancy)
 }
 
 /// Create a window with a custom configuration.
@@ -111,7 +114,7 @@ pub fn gotta_go_fast<S: ToString>(
 /// `get_fancy` with a custom config. However, if there is a bug in the OS/windowing system or
 /// glutin or in this library, this function exists as a possible work around (or in case for some
 /// reason everything must be absolutely correct at window creation)
-pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S, ET>) -> MiniGlFb<ET> {
+pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S>, event_loop: &EventLoop<ET>) -> MiniGlFb {
     let buffer_width = if config.buffer_size.0 == 0 { config.window_size.0.round() as _ }
         else { config.buffer_size.0 };
     let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
@@ -122,7 +125,7 @@ pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S, ET>) -> MiniGlFb<ET
         config.window_size.0,
         config.window_size.1,
         config.resizable,
-        &config.event_loop
+        event_loop
     );
 
     let (vp_width, vp_height) = context.window().inner_size().into();
@@ -136,7 +139,6 @@ pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S, ET>) -> MiniGlFb<ET
 
     MiniGlFb {
         internal: Internal {
-            event_loop: config.event_loop,
             context,
             fb,
         }
@@ -154,11 +156,11 @@ pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S, ET>) -> MiniGlFb<ET
 /// # Basic Usage
 ///
 /// See the `update_buffer` and `persist` methods.
-pub struct MiniGlFb<ET: 'static> {
-    pub internal: Internal<ET>,
+pub struct MiniGlFb {
+    pub internal: Internal,
 }
 
-impl<ET: 'static> MiniGlFb<ET> {
+impl MiniGlFb {
     /// Updates the backing buffer and draws immediately (swaps buffers).
     ///
     /// The main drawing function.
@@ -299,8 +301,8 @@ impl<ET: 'static> MiniGlFb<ET> {
     ///
     /// Supports pressing escape to quit. Automatically scales the rendered buffer to the size of
     /// the window if the window is resiable (but this does not resize the buffer).
-    pub fn persist(&mut self) {
-        self.internal.persist();
+    pub fn persist<ET: 'static>(&mut self, event_loop: &mut EventLoop<ET>) {
+        self.internal.persist(event_loop);
     }
 
     /// `persist` implementation.
@@ -308,8 +310,8 @@ impl<ET: 'static> MiniGlFb<ET> {
     /// When redraw is true, redraws as fast as possible. This function is primarily for debugging.
     ///
     /// See `persist` method documentation for more info.
-    pub fn persist_and_redraw(&mut self, redraw: bool) {
-        self.internal.persist_and_redraw(redraw);
+    pub fn persist_and_redraw<ET: 'static>(&mut self, event_loop: &mut EventLoop<ET>, redraw: bool) {
+        self.internal.persist_and_redraw(event_loop, redraw);
     }
 
     /// Provides an easy interface for rudimentary input handling.
@@ -326,21 +328,21 @@ impl<ET: 'static> MiniGlFb<ET> {
     /// You can cause the handler to exit by returning false from it. This does not kill the
     /// window, so as long as you still have it in scope, you can actually keep using it and,
     /// for example, resume handling input but with a different handler callback.
-    pub fn glutin_handle_basic_input<F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
-        &mut self, handler: F
+    pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
+        &mut self, event_loop: &mut EventLoop<ET>, handler: F
     ) {
-        self.internal.glutin_handle_basic_input(handler);
+        self.internal.glutin_handle_basic_input(event_loop, handler);
     }
 
     /// Need full access to Glutin's event handling? No problem!
     ///
-    /// Hands you the event loop and the window we created, so you can handle events however you
-    /// want, and the Framebuffer, so you can still draw easily!
+    /// Hands you the window we created, so you can handle events however you want, and the
+    /// Framebuffer, so you can still draw easily!
     ///
     /// **IMPORTANT:** You should make sure to render something before swapping buffers or **the
     /// window may flash violently**. You can call `fb.redraw()` directly before if you are unsure
     /// that an OpenGL draw call was issued. `fb.update_buffer` will typically issue a draw call.
-    pub fn glutin_breakout(self) -> GlutinBreakout<ET> {
+    pub fn glutin_breakout(self) -> GlutinBreakout {
         self.internal.glutin_breakout()
     }
 }

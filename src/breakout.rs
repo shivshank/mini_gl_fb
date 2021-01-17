@@ -3,10 +3,8 @@ use core::Framebuffer;
 
 use std::collections::HashMap;
 use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
-use glutin::event_loop::EventLoop;
 
-pub struct GlutinBreakout<ET: 'static> {
-    pub events_loop: EventLoop<ET>,
+pub struct GlutinBreakout {
     pub context: WindowedContext<PossiblyCurrent>,
     pub fb: Framebuffer,
 }

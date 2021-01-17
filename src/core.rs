@@ -140,13 +140,12 @@ pub fn init_framebuffer(
 /// When `MiniGlFb` wraps a method from `Internal`, the documentation is provided there. If there
 /// is no documentation and you find the method is non-trivial, it's a bug! Feel free to submit an
 /// issue!
-pub struct Internal<ET: 'static> {
-    pub event_loop: EventLoop<ET>,
+pub struct Internal {
     pub context: WindowedContext<PossiblyCurrent>,
     pub fb: Framebuffer,
 }
 
-impl<ET: 'static> Internal<ET> {
+impl Internal {
     pub fn update_buffer<T>(&mut self, image_data: &[T]) {
         self.fb.update_buffer(image_data);
         self.context.swap_buffers().unwrap();
@@ -198,17 +197,14 @@ impl<ET: 'static> Internal<ET> {
         self.context.swap_buffers().unwrap();
     }
 
-    pub fn persist(&mut self) {
-        self.persist_and_redraw(false);
+    pub fn persist<ET: 'static>(&mut self, event_loop: &mut EventLoop<ET>) {
+        self.persist_and_redraw(event_loop, false);
     }
 
-    pub fn persist_and_redraw(&mut self, redraw: bool) {
+    pub fn persist_and_redraw<ET: 'static>(&mut self, event_loop: &mut EventLoop<ET>, redraw: bool) {
         // prevent event_loop.run_return from requiring a borrow of self, so the closure can use it
         // I can safely construct a new event loop, or I can use horribly unsafe code which causes
         // undefined behavior and any code that accidentally touches it to blow up. Safe code it is
-        let mut event_loop =
-            std::mem::replace(&mut self.event_loop, EventLoop::<ET>::with_user_event());
-
         event_loop.run_return(|event, _, flow| {
             *flow = ControlFlow::Wait;
 
@@ -240,12 +236,10 @@ impl<ET: 'static> Internal<ET> {
                 self.context.swap_buffers().unwrap();
             }
         });
-
-        self.event_loop = event_loop;
     }
 
-    pub fn glutin_handle_basic_input<F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
-        &mut self, mut handler: F
+    pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
+        &mut self, event_loop: &mut EventLoop<ET>, mut handler: F
     ) {
         let mut input = BasicInput {
             // Not sure how to set mouse pos at start
@@ -255,9 +249,6 @@ impl<ET: 'static> Internal<ET> {
             modifiers: Default::default(),
             resized: false,
         };
-
-        let mut event_loop =
-            std::mem::replace(&mut self.event_loop, EventLoop::<ET>::with_user_event());
 
         event_loop.run_return(|event, _, flow| {
             // for compatibility with previous versions, which used an infinite run loop
@@ -335,13 +326,10 @@ impl<ET: 'static> Internal<ET> {
                 self.fb.did_draw = false;
             }
         });
-
-        self.event_loop = event_loop;
     }
 
-    pub fn glutin_breakout(self) -> GlutinBreakout<ET> {
+    pub fn glutin_breakout(self) -> GlutinBreakout {
         GlutinBreakout {
-            events_loop: self.event_loop,
             context: self.context,
             fb: self.fb,
         }
