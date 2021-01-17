@@ -2,22 +2,28 @@
 //!
 //! # Basic Usage
 //!
-//! Start with the function `gotta_go_fast`. This will create a basic window and give you a buffer
-//! that you can draw to in one line. The main public API is available through the `MiniGlFb` type.
+//! Start with the function `gotta_go_fast`. This will create an event loop and basic window and
+//! give you a buffer that you can draw to, all in just one function call. The main public API is
+//! available through the `MiniGlFb` type.
 //!
 //! ```rust
 //! extern crate mini_gl_fb;
 //!
 //! fn main() {
+//!     // Create the event loop and framebuffer
 //!     let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+//!
+//!     // Fill the buffer with something
 //!     let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
 //!     fb.update_buffer(&buffer);
+//!
+//!     // Show the window until the user decides to quit (close button, or Esc)
 //!     fb.persist(&mut event_loop);
 //! }
 //! ```
 //!
 //! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer[0] is the bottom
-//! left pixel. The buffer should be tightly packed with no padding after each row.
+//! left pixel (not the top). The buffer should be tightly packed with no padding after each row.
 //!
 //! # Interlude: Library philosophy
 //!
@@ -36,7 +42,11 @@
 //! # More advanced configuration
 //!
 //! Use the `get_fancy` function for more settings. See `Config` for what's available. This allows
-//! you to, for instance, create a window with a buffer of a different size than the window.
+//! you to, for instance, create a window with a buffer of a different size than the window. This is
+//! useful for HiDPI support, since you can take advantage of the full resolution of the screen.
+//!
+//! `get_fancy` (and all the functions in the library) require you to bring your own event loop.
+//! This allows for multiple windows. See the `multi_window` example.
 //!
 //! ```rust
 //! use mini_gl_fb::{get_fancy, Config};
@@ -86,11 +96,12 @@ pub use core::{Internal, BufferFormat, Framebuffer};
 use core::ToGlType;
 use glutin::event_loop::EventLoop;
 
-/// Creates a non resizable window and framebuffer with a given size in pixels.
+/// Creates a non-resizable window and framebuffer with a given size in logical pixels. On HiDPI
+/// screens, the physical size of the window may be larger or smaller than the provided values, but
+/// the buffer will be scaled to match.
 ///
-/// Please note that the window size is in logical device pixels, so on a high DPI monitor the
-/// physical window size may be larger. In this case, the rendered buffer will be scaled it
-/// automatically by OpenGL.
+/// This function also creates an event loop for you. If you would like to create your own event
+/// loop, you can use the `get_fancy` function directly.
 pub fn gotta_go_fast<S: ToString>(
     window_title: S,
     window_width: f64,
@@ -110,7 +121,7 @@ pub fn gotta_go_fast<S: ToString>(
 /// Create a window with a custom configuration.
 ///
 /// If this configuration is not sufficient for you, check out the source for this function.
-/// Creating the MiniGlFb instance is just a call to two functions!
+/// Creating the `MiniGlFb` instance is just a call to two functions!
 ///
 /// Many window settings can be changed after creation, so you most likely don't ever need to call
 /// `get_fancy` with a custom config. However, if there is a bug in the OS/windowing system or
@@ -173,21 +184,6 @@ impl MiniGlFb {
     /// data required based on the buffers format.
     pub fn update_buffer<T>(&mut self, image_data: &[T]) {
         self.internal.update_buffer(image_data);
-    }
-
-    /// Checks if escape has been pressed or the window has been asked to close.
-    ///
-    /// This function is a good choice for a while loop condition when you are making a simulation
-    /// that needs to progress over time but does not need to handle user input.
-    ///
-    /// Calling this function clears the event queue and also handles resizes for you (if your
-    /// window is resizable). This does not resize the image buffer; the rendered buffer will
-    /// instead scale to fit the window.
-    ///
-    /// Please note that if your window does change size, for buffer to appear scaled it must
-    /// be redrawn, typically either by calling `redraw` or `update_buffer`.
-    pub fn is_running(&mut self) -> bool {
-        self.internal.is_running()
     }
 
     pub fn redraw(&mut self) {
