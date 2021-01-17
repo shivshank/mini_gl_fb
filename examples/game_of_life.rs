@@ -2,6 +2,7 @@ extern crate mini_gl_fb;
 
 use mini_gl_fb::{Config, BufferFormat};
 use mini_gl_fb::glutin::event::{VirtualKeyCode, MouseButton};
+use mini_gl_fb::glutin::event_loop::EventLoop;
 
 use std::time::SystemTime;
 
@@ -9,12 +10,13 @@ const WIDTH: usize = 200;
 const HEIGHT: usize = 200;
 
 fn main() {
+    let mut event_loop = EventLoop::new();
     let mut fb = mini_gl_fb::get_fancy(Config {
         window_title: "PSA: Conway wants you to appreciate group theory instead",
         window_size: (800.0, 800.0),
         buffer_size: (WIDTH as _, HEIGHT as _),
         .. Default::default()
-    });
+    }, &event_loop);
 
     fb.change_buffer_format::<u8>(BufferFormat::R);
     fb.use_post_process_shader(POST_PROCESS);
@@ -35,7 +37,7 @@ fn main() {
     let mut previous = SystemTime::now();
     let mut extra_delay: f64 = 0.0;
 
-    fb.glutin_handle_basic_input(|fb, input| {
+    fb.glutin_handle_basic_input(&mut event_loop, |fb, input| {
         let elapsed = previous.elapsed().unwrap();
         let seconds = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
 

@@ -1,15 +1,17 @@
 extern crate mini_gl_fb;
 
 use mini_gl_fb::{Config, BufferFormat};
+use mini_gl_fb::glutin::event_loop::EventLoop;
 
 fn main() {
+    let mut event_loop = EventLoop::new();
     let mut fb = mini_gl_fb::get_fancy(Config {
         window_title: "Hello world!",
         window_size: (800.0, 600.0),
         buffer_size: (2, 2),
         resizable: true,
         .. Default::default()
-    });
+    }, &event_loop);
 
 
     fb.change_buffer_format::<u8>(BufferFormat::R);
@@ -21,5 +23,5 @@ fn main() {
     // This can also be configured at creation
     // fb.set_resizable(true);
 
-    fb.persist();
+    fb.persist(&mut event_loop);
 }

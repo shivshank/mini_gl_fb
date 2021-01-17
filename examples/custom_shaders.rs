@@ -102,7 +102,7 @@ fn main() {
     let width = 800.0;
     let height = 600.0;
 
-    let mut fb = mini_gl_fb::gotta_go_fast("Hello shaders!", width, height);
+    let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello shaders!", width, height);
 
     let mut buffer = vec![[128u8, 0, 0, 255]; (width * height) as usize];
     // let's write a red line into the buffer roughly along the diagonal (misses many pixels)
@@ -119,5 +119,5 @@ fn main() {
 
     fb.update_buffer(&buffer);
 
-    fb.persist_and_redraw(true);
+    fb.persist_and_redraw(&mut event_loop, true);
 }

@@ -9,10 +9,10 @@
 //! extern crate mini_gl_fb;
 //!
 //! fn main() {
-//!     let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+//!     let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
 //!     let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
 //!     fb.update_buffer(&buffer);
-//!     fb.persist();
+//!     fb.persist(&mut event_loop);
 //! }
 //! ```
 //!
@@ -40,16 +40,18 @@
 //!
 //! ```rust
 //! use mini_gl_fb::{get_fancy, Config};
+//! use mini_gl_fb::glutin::event_loop::EventLoop;
 //! # let window_title = "foo";
 //! # let window_width = 800.0;
 //! # let window_height = 600.0;
 //!
+//! let event_loop = EventLoop::new();
 //! let config = Config {
 //!    window_title: window_title.to_string(),
 //!    window_size: (window_width, window_height),
 //!    .. Default::default()
 //! };
-//! let fb = get_fancy(config);
+//! let fb = get_fancy(config, &event_loop);
 //! ```
 //!
 //! If you think something else should be exposed as an option, open an issue!
@@ -204,7 +206,8 @@ impl MiniGlFb {
     ///
     /// ```rust
     /// # use mini_gl_fb::get_fancy;
-    /// # let mut fb = get_fancy::<&str>(Default::default());
+    /// # use mini_gl_fb::glutin::event_loop::EventLoop;
+    /// # let mut fb = get_fancy::<&str, ()>(Default::default(), &EventLoop::new());
     /// fb.use_post_process_shader("
     ///     void main_image( out vec4 r_frag_color, in vec2 v_uv ) {
     ///         r_frag_color = texture(u_buffer, v_uv);
@@ -250,7 +253,8 @@ impl MiniGlFb {
     /// ```rust
     /// use mini_gl_fb::BufferFormat;
     /// # use mini_gl_fb::get_fancy;
-    /// # let mut fb = get_fancy::<&str>(Default::default());
+    /// # use mini_gl_fb::glutin::event_loop::EventLoop;
+    /// # let mut fb = get_fancy::<&str, ()>(Default::default(), &EventLoop::new());
     ///
     /// fb.change_buffer_format::<u8>(BufferFormat::R);
     /// fb.use_grayscale_shader();
