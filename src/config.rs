@@ -25,6 +25,17 @@ pub struct Config<S: ToString> {
     pub window_size: (f64, f64)
 }
 
+impl<S: ToString + Clone> Clone for Config<S> {
+    fn clone(&self) -> Self {
+        Self {
+            buffer_size: self.buffer_size,
+            resizable: self.resizable,
+            window_title: self.window_title.clone(),
+            window_size: self.window_size
+        }
+    }
+}
+
 impl<'a> Default for Config<&'a str> {
     fn default() -> Self {
         Config {
