@@ -117,12 +117,12 @@ pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S, ET>) -> MiniGlFb<ET
     let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
         else { config.buffer_size.1 };
 
-    let (events_loop, context) = core::init_glutin_context(
+    let context = core::init_glutin_context(
         config.window_title,
         config.window_size.0,
         config.window_size.1,
         config.resizable,
-        config.event_loop
+        &config.event_loop
     );
 
     let (vp_width, vp_height) = context.window().inner_size().into();
@@ -136,7 +136,7 @@ pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S, ET>) -> MiniGlFb<ET
 
     MiniGlFb {
         internal: Internal {
-            event_loop: events_loop,
+            event_loop: config.event_loop,
             context,
             fb,
         }

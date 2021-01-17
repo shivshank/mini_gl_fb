@@ -18,8 +18,8 @@ pub fn init_glutin_context<S: ToString, ET: 'static>(
     window_width: f64,
     window_height: f64,
     resizable: bool,
-    event_loop: EventLoop<ET>
-) -> (EventLoop<ET>, WindowedContext<PossiblyCurrent>) {
+    event_loop: &EventLoop<ET>
+) -> WindowedContext<PossiblyCurrent> {
     let window_size = LogicalSize::new(window_width, window_height);
 
     let window = WindowBuilder::new()
@@ -29,7 +29,7 @@ pub fn init_glutin_context<S: ToString, ET: 'static>(
 
     let context: WindowedContext<PossiblyCurrent> = unsafe {
         ContextBuilder::new()
-            .build_windowed(window, &event_loop)
+            .build_windowed(window, event_loop)
             .unwrap()
             .make_current()
             .unwrap()
@@ -37,7 +37,7 @@ pub fn init_glutin_context<S: ToString, ET: 'static>(
 
     gl::load_with(|symbol| context.get_proc_address(symbol) as *const _);
 
-    (event_loop, context)
+    context
 }
 
 type VertexFormat = buffer_layout!([f32; 2], [f32; 2]);
