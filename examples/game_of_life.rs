@@ -1,7 +1,7 @@
 extern crate mini_gl_fb;
 
 use mini_gl_fb::{Config, BufferFormat};
-use mini_gl_fb::glutin::{MouseButton, VirtualKeyCode};
+use mini_gl_fb::glutin::event::{VirtualKeyCode, MouseButton};
 
 use std::time::SystemTime;
 

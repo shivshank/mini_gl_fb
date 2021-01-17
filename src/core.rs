@@ -3,14 +3,17 @@ use breakout::{GlutinBreakout, BasicInput};
 use rustic_gl;
 
 use glutin::{ContextBuilder, WindowedContext, PossiblyCurrent};
-use glutin::dpi::LogicalSize;
+use glutin::dpi::{LogicalSize, PhysicalPosition};
 
 use gl;
 use gl::types::*;
 
 use std::mem::size_of_val;
 use glutin::window::WindowBuilder;
-use glutin::event_loop::EventLoop;
+use glutin::event_loop::{EventLoop, ControlFlow};
+use glutin::platform::run_return::EventLoopExtRunReturn;
+use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput};
+use std::collections::HashMap;
 
 /// Create a context using glutin given a configuration.
 pub fn init_glutin_context<S: ToString, ET: 'static>(
@@ -200,126 +203,140 @@ impl<ET: 'static> Internal<ET> {
     }
 
     pub fn persist_and_redraw(&mut self, redraw: bool) {
-        todo!()
-        //let mut running = true;
-        //while running {
-        //    let mut new_size = None;
-        //    self.event_loop.poll_events(|event| {
-        //        match event {
-        //            Event::WindowEvent { event, .. } => match event {
-        //                WindowEvent::CloseRequested => running = false,
-        //                WindowEvent::KeyboardInput { input, .. } => {
-        //                    if let Some(k) = input.virtual_keycode {
-        //                        if k == VirtualKeyCode::Escape
-        //                                && input.state == ElementState::Released {
-        //                            running = false;
-        //                        }
-        //                    }
-        //                }
-        //                WindowEvent::Resized(logical_size) => {
-        //                    new_size = Some(logical_size);
-        //                }
-        //                _ => {},
-        //            },
-        //            _ => {},
-        //        }
-        //    });
-        //    if let Some(size) = new_size {
-        //        let dpi_factor = self.context.get_hidpi_factor();
-        //        let (x, y) = size.to_physical(dpi_factor).into();
-        //        self.resize_viewport(x, y);
-        //        // TODO: We should store window size in BasicInput, but as what type? OpenGL wants
-        //        // integer window sizes but we also have to deal with physical vs. logical size
-        //        self.redraw();
-        //    } else {
-        //        if redraw {
-        //            self.fb.redraw();
-        //            self.context.swap_buffers().unwrap();
-        //        }
-        //    }
-        //}
+        // prevent event_loop.run_return from requiring a borrow of self, so the closure can use it
+        // I can safely construct a new event loop, or I can use horribly unsafe code which causes
+        // undefined behavior and any code that accidentally touches it to blow up. Safe code it is
+        let mut event_loop =
+            std::mem::replace(&mut self.event_loop, EventLoop::<ET>::with_user_event());
+
+        event_loop.run_return(|event, _, flow| {
+            *flow = ControlFlow::Wait;
+
+            let mut new_size = None;
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::CloseRequested => *flow = ControlFlow::Exit,
+                    WindowEvent::KeyboardInput { input, .. } => {
+                        if let Some(k) = input.virtual_keycode {
+                            if k == VirtualKeyCode::Escape
+                                    && input.state == ElementState::Released {
+                                *flow = ControlFlow::Exit;
+                            }
+                        }
+                    }
+                    WindowEvent::Resized(physical_size) => {
+                        new_size = Some(physical_size);
+                    }
+                    _ => {},
+                },
+                _ => {},
+            }
+
+            if let Some(size) = new_size {
+                self.resize_viewport(size.width, size.height);
+                self.redraw();
+            } else if redraw {
+                self.fb.redraw();
+                self.context.swap_buffers().unwrap();
+            }
+        });
+
+        self.event_loop = event_loop;
     }
 
     pub fn glutin_handle_basic_input<F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
         &mut self, mut handler: F
     ) {
-        todo!()
-        //let mut running = true;
-        //let mut input = BasicInput {
-        //    // Not sure how to set mouse pos at start
-        //    mouse_pos: (0.0, 0.0),
-        //    mouse: HashMap::new(),
-        //    keys: HashMap::new(),
-        //    modifiers: Default::default(),
-        //    resized: false,
-        //};
-        //while running {
-        //    let mut new_size = None;
-        //    let mut new_mouse_pos: Option<LogicalPosition<f64>> = None;
-        //    self.event_loop.poll_events(|event| {
-        //        // Copy the current states into the previous state for input
-        //        for (_, val) in &mut input.keys {
-        //            val.0 = val.1;
-        //        }
-        //        for (_, val) in &mut input.mouse {
-        //            val.0 = val.1;
-        //        }
-        //        match event {
-        //            Event::WindowEvent { event, .. } => match event {
-        //                WindowEvent::CloseRequested => running = false,
-        //                WindowEvent::KeyboardInput { input: event_input, .. } => {
-        //                    if let Some(vk) = event_input.virtual_keycode {
-        //                        let key = input.keys.entry(vk)
-        //                            .or_insert((false, false));
-        //                        key.1 = event_input.state == ElementState::Pressed;
-        //                    }
-        //                    input.modifiers = event_input.modifiers;
-        //                }
-        //                WindowEvent::CursorMoved { position, modifiers, ..} => {
-        //                    new_mouse_pos = Some(position.to_logical(self.context.get_hidpi_factor()));
-        //                    input.modifiers = modifiers;
-        //                }
-        //                WindowEvent::MouseInput { state, button, modifiers, .. } => {
-        //                    let button = input.mouse.entry(button)
-        //                        .or_insert((false, false));
-        //                    button.1 = state == ElementState::Pressed;
-        //                    input.modifiers = modifiers;
-        //                }
-        //                WindowEvent::Resized(logical_size) => {
-        //                    new_size = Some(logical_size);
-        //                }
-        //                _ => {},
-        //            },
-        //            _ => {},
-        //        }
-        //    });
-        //    if let Some(size) = new_size {
-        //        let dpi_factor = self.context.get_hidpi_factor();
-        //        let (x, y) = size.to_physical(dpi_factor).into();
-        //        self.resize_viewport(x, y);
-        //        input.resized = false;
-        //    }
-        //    if let Some(pos) = new_mouse_pos {
-        //        let dpi_factor = self.context.get_hidpi_factor();
-        //        let (x, y): (f64, f64) = pos.to_physical(dpi_factor).into();
-        //        let x_scale = self.fb.buffer_width as f64 / (self.fb.vp_width as f64);
-        //        let y_scale = self.fb.buffer_height as f64 / (self.fb.vp_height as f64);
-        //        let mouse_pos = (
-        //            x * x_scale,
-        //            // use the OpenGL texture coordinate system instead of window coordinates
-        //            self.fb.buffer_height as f64 - y * y_scale
-        //        );
-        //        input.mouse_pos = mouse_pos;
-        //    }
-        //
-        //    if running {
-        //        running = handler(&mut self.fb, &input);
-        //        if self.fb.did_draw {
-        //            self.context.swap_buffers().unwrap();
-        //            self.fb.did_draw = false;
-        //        }
-        //    }
-        //}
+        let mut input = BasicInput {
+            // Not sure how to set mouse pos at start
+            mouse_pos: (0.0, 0.0),
+            mouse: HashMap::new(),
+            keys: HashMap::new(),
+            modifiers: Default::default(),
+            resized: false,
+        };
+
+        let mut event_loop =
+            std::mem::replace(&mut self.event_loop, EventLoop::<ET>::with_user_event());
+
+        event_loop.run_return(|event, _, flow| {
+            // for compatibility with previous versions, which used an infinite run loop
+            *flow = ControlFlow::Poll;
+
+            let mut new_size = None;
+            let mut new_mouse_pos: Option<PhysicalPosition<f64>> = None;
+
+            // Copy the current states into the previous state for input
+            for (_, val) in &mut input.keys {
+                val.0 = val.1;
+            }
+
+            for (_, val) in &mut input.mouse {
+                val.0 = val.1;
+            }
+
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::CloseRequested => *flow = ControlFlow::Exit,
+                    WindowEvent::KeyboardInput {
+                        input: KeyboardInput {
+                            virtual_keycode: Some(vk),
+                            state,
+                            ..
+                        },
+                        ..
+                    } => {
+                        let key = input.keys.entry(vk)
+                            .or_insert((false, false));
+                        key.1 = state == ElementState::Pressed;
+                    }
+                    WindowEvent::CursorMoved { position, .. } => {
+                        new_mouse_pos = Some(position);
+                    }
+                    WindowEvent::MouseInput { state, button, .. } => {
+                        let button = input.mouse.entry(button)
+                            .or_insert((false, false));
+                        button.1 = state == ElementState::Pressed;
+                    }
+                    WindowEvent::ModifiersChanged(modifiers) => {
+                        input.modifiers = modifiers;
+                    }
+                    WindowEvent::Resized(logical_size) => {
+                        new_size = Some(logical_size);
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+
+            if let Some(size) = new_size {
+                self.resize_viewport(size.width, size.height);
+                input.resized = false;
+            }
+
+            if let Some(pos) = new_mouse_pos {
+                let (x, y): (f64, f64) = pos.into();
+                let x_scale = self.fb.buffer_width as f64 / (self.fb.vp_width as f64);
+                let y_scale = self.fb.buffer_height as f64 / (self.fb.vp_height as f64);
+                let mouse_pos = (
+                    x * x_scale,
+                    // use the OpenGL texture coordinate system instead of window coordinates
+                    self.fb.buffer_height as f64 - y * y_scale
+                );
+                input.mouse_pos = mouse_pos;
+            }
+
+            if !handler(&mut self.fb, &input) {
+                *flow = ControlFlow::Exit;
+            }
+
+            if self.fb.did_draw {
+                self.context.swap_buffers().unwrap();
+                self.fb.did_draw = false;
+            }
+        });
+
+        self.event_loop = event_loop;
     }
 
     pub fn glutin_breakout(self) -> GlutinBreakout<ET> {
