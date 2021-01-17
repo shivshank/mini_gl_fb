@@ -1,17 +1,13 @@
-use glutin::{
-    GlWindow,
-    EventsLoop,
-    VirtualKeyCode,
-    MouseButton,
-    ModifiersState,
-};
+use glutin::{WindowedContext, PossiblyCurrent};
 use core::Framebuffer;
 
 use std::collections::HashMap;
+use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
+use glutin::event_loop::EventLoop;
 
-pub struct GlutinBreakout {
-    pub events_loop: EventsLoop,
-    pub gl_window: GlWindow,
+pub struct GlutinBreakout<ET: 'static> {
+    pub events_loop: EventLoop<ET>,
+    pub context: WindowedContext<PossiblyCurrent>,
     pub fb: Framebuffer,
 }
 

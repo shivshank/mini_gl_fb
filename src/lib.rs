@@ -92,7 +92,7 @@ pub fn gotta_go_fast<S: ToString>(
     window_title: S,
     window_width: f64,
     window_height: f64
-) -> MiniGlFb {
+) -> MiniGlFb<()> {
     let config = Config {
         window_title: window_title.to_string(),
         window_size: (window_width, window_height),
@@ -111,24 +111,21 @@ pub fn gotta_go_fast<S: ToString>(
 /// `get_fancy` with a custom config. However, if there is a bug in the OS/windowing system or
 /// glutin or in this library, this function exists as a possible work around (or in case for some
 /// reason everything must be absolutely correct at window creation)
-pub fn get_fancy<S: ToString>(config: Config<S>) -> MiniGlFb {
+pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S, ET>) -> MiniGlFb<ET> {
     let buffer_width = if config.buffer_size.0 == 0 { config.window_size.0.round() as _ }
         else { config.buffer_size.0 };
     let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
         else { config.buffer_size.1 };
 
-    let (events_loop, gl_window) = core::init_glutin_context(
+    let (events_loop, context) = core::init_glutin_context(
         config.window_title,
         config.window_size.0,
         config.window_size.1,
         config.resizable,
+        config.event_loop
     );
 
-    let dpi_factor = gl_window.get_hidpi_factor();
-    let (vp_width, vp_height) = gl_window.get_inner_size()
-        .unwrap()
-        .to_physical(dpi_factor)
-        .into();
+    let (vp_width, vp_height) = context.window().inner_size().into();
 
     let fb = core::init_framebuffer(
         buffer_width,
@@ -139,8 +136,8 @@ pub fn get_fancy<S: ToString>(config: Config<S>) -> MiniGlFb {
 
     MiniGlFb {
         internal: Internal {
-            events_loop,
-            gl_window,
+            event_loop: events_loop,
+            context,
             fb,
         }
     }
@@ -157,11 +154,11 @@ pub fn get_fancy<S: ToString>(config: Config<S>) -> MiniGlFb {
 /// # Basic Usage
 ///
 /// See the `update_buffer` and `persist` methods.
-pub struct MiniGlFb {
-    pub internal: Internal,
+pub struct MiniGlFb<ET: 'static> {
+    pub internal: Internal<ET>,
 }
 
-impl MiniGlFb {
+impl<ET: 'static> MiniGlFb<ET> {
     /// Updates the backing buffer and draws immediately (swaps buffers).
     ///
     /// The main drawing function.
@@ -343,7 +340,7 @@ impl MiniGlFb {
     /// **IMPORTANT:** You should make sure to render something before swapping buffers or **the
     /// window may flash violently**. You can call `fb.redraw()` directly before if you are unsure
     /// that an OpenGL draw call was issued. `fb.update_buffer` will typically issue a draw call.
-    pub fn glutin_breakout(self) -> GlutinBreakout {
+    pub fn glutin_breakout(self) -> GlutinBreakout<ET> {
         self.internal.glutin_breakout()
     }
 }
