@@ -248,8 +248,11 @@ impl TrackedWindow for DrawWindow {
                 ..
             } if self.matches_id(id) => {
                 if self.mouse_state == ElementState::Pressed {
-                    let position = position.to_logical::<f64>(self.window().scale_factor() * SCALE_FACTOR);
-                    let position = LogicalPosition::new(position.x.floor(), position.y.floor()).cast::<i32>();
+                    let inner_size = self.window().inner_size();
+                    let position = LogicalPosition::new(
+                        ((position.x / inner_size.width as f64) * self.buffer_size.width as f64).floor(),
+                        ((position.y / inner_size.height as f64) * self.buffer_size.height as f64).floor()
+                    ).cast::<i32>();
 
                     if let Some(line_start) = self.line_start {
                         self.plot_line(line_start, position);
