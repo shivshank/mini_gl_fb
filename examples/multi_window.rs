@@ -204,7 +204,11 @@ impl TrackedWindow for DrawWindow {
                 },
                 ..
             } if self.matches_id(id) => {
-                return false;
+                if let Some(_) = self.window().fullscreen() {
+                    self.window().set_fullscreen(None);
+                } else {
+                    return false;
+                }
             }
             Event::RedrawRequested(id) if self.matches_id(id) => {
                 unsafe { self.make_current(); }
@@ -241,7 +245,7 @@ impl TrackedWindow for DrawWindow {
                 ..
             } if self.matches_id(id) => {
                 if self.mouse_state == ElementState::Pressed {
-                    let mut position = position.to_logical::<i32>(self.window().scale_factor());
+                    let position = position.to_logical::<i32>(self.window().scale_factor());
 
                     if let Some(line_start) = self.line_start {
                         self.plot_line(line_start, position);
