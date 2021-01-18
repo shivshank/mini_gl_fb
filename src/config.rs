@@ -18,8 +18,8 @@ pub struct Config<S: ToString> {
     /// Sets the pixel dimensions of the buffer. The buffer will automatically scale to the size of
     /// the window. By default this will be the same as the window_size.
     pub buffer_size: (u32, u32),
-    /// If this is true, the buffer will automatically resize if the event loop's events are being
-    /// managed by mini_gl_fb.
+    /// If this is true, the window created by mini_gl_fb will be set to resizable. This can be
+    /// changed later.
     pub resizable: bool,
     pub window_title: S,
     pub window_size: (f64, f64),
