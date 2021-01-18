@@ -141,6 +141,7 @@ pub fn init_framebuffer(
         vbo,
         texture_format,
         did_draw: false,
+        inverted_y: invert_y,
     }
 }
 
@@ -292,7 +293,11 @@ impl Internal {
                 let mouse_pos = (
                     x * x_scale,
                     // use the OpenGL texture coordinate system instead of window coordinates
-                    self.fb.buffer_height as f64 - y * y_scale
+                    if self.fb.inverted_y {
+                        self.fb.buffer_height as f64 - y * y_scale
+                    } else {
+                        y * y_scale
+                    }
                 );
                 input.mouse_pos = mouse_pos;
             }
@@ -344,6 +349,7 @@ pub struct Framebuffer {
     pub vbo: GLuint,
     pub texture_format: (BufferFormat, GLenum),
     pub did_draw: bool,
+    pub inverted_y: bool,
 }
 
 impl Framebuffer {
