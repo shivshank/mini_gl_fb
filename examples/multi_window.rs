@@ -1,5 +1,4 @@
 extern crate mini_gl_fb;
-extern crate glutin;
 
 use mini_gl_fb::glutin::event_loop::EventLoop;
 use mini_gl_fb::glutin::event::{Event, WindowEvent, MouseButton};
@@ -13,7 +12,53 @@ use mini_gl_fb::glutin::platform::run_return::EventLoopExtRunReturn;
 use mini_gl_fb::glutin::{WindowedContext, PossiblyCurrent};
 use mini_gl_fb::glutin::event::ElementState;
 
-struct TrackedWindowImpl {
+/// A window being tracked by a `MultiWindow`. All tracked windows will be forwarded all events
+/// received on the `MultiWindow`'s event loop.
+trait TrackedWindow {
+    /// Handles one event from the event loop. Returns true if the window needs to be kept alive,
+    /// otherwise it will be closed. Window events should be checked to ensure that their ID is one
+    /// that the TrackedWindow is interested in.
+    fn handle_event(&mut self, event: &Event<()>) -> bool;
+}
+
+/// Manages multiple `TrackedWindow`s by forwarding events to them.
+struct MultiWindow {
+    windows: Vec<Cell<Box<dyn TrackedWindow>>>,
+}
+
+impl MultiWindow {
+    /// Creates a new `MultiWindow`.
+    pub fn new() -> Self {
+        MultiWindow {
+            windows: vec![],
+        }
+    }
+
+    /// Adds a new `TrackedWindow` to the `MultiWindow`.
+    pub fn add(&mut self, window: Box<dyn TrackedWindow>) {
+        self.windows.push(Cell::new(window))
+    }
+
+    /// Runs the event loop until all `TrackedWindow`s are closed.
+    pub fn run(&mut self, event_loop: &mut EventLoop<()>) {
+        if !self.windows.is_empty() {
+            event_loop.run_return(|event, _, flow| {
+                *flow = ControlFlow::Wait;
+
+                self.windows.retain(|window|
+                    unsafe { &mut *window.as_ptr() }.handle_event(&event)
+                );
+
+                if self.windows.is_empty() {
+                    *flow = ControlFlow::Exit;
+                }
+            });
+        }
+    }
+}
+
+/// A basic window that allows you to draw in it. An example of how to implement a `TrackedWindow`.
+struct DrawWindow {
     pub breakout: GlutinBreakout,
     pub buffer: Vec<u8>,
     pub buffer_size: LogicalSize<u32>,
@@ -22,7 +67,7 @@ struct TrackedWindowImpl {
     mouse_state: ElementState,
 }
 
-impl TrackedWindowImpl {
+impl DrawWindow {
     fn window(&self) -> &Window {
         self.breakout.context.window()
     }
@@ -31,17 +76,31 @@ impl TrackedWindowImpl {
         id == self.window().id()
     }
 
+    /// A call to this function is required before updating the window's buffer or doing any other
+    /// OpenGL things, since all windows are run on the same thread.
+    ///
+    /// # Panics
+    /// Panics if the OpenGL context cannot be made current.
     unsafe fn make_current(&mut self) {
         let mut context: WindowedContext<PossiblyCurrent> = std::ptr::read(&mut self.breakout.context as *mut _);
         context = context.make_current().unwrap();
         std::ptr::write(&mut self.breakout.context as *mut _, context);
     }
 
+    /// Updates the window's buffer. Should only be done inside of RedrawRequested events; outside
+    /// of them, use `request_redraw` instead.
     fn redraw(&mut self) {
         self.breakout.fb.update_buffer(&self.buffer);
         self.breakout.context.swap_buffers().unwrap();
     }
 
+    /// Requests a redraw event for this window.
+    fn request_redraw(&self) {
+        self.window().request_redraw();
+    }
+
+    /// Resizes the window's buffer to a new size, attempting to preserve the current content as
+    /// much as possible. Fills new space with the background color, and deletes overflowing space.
     fn resize(&mut self, new_size: LogicalSize<u32>) {
         let mut new_buffer = vec![0u8; new_size.width as usize * new_size.height as usize * 4];
         new_buffer.chunks_exact_mut(4).for_each(|c| c.copy_from_slice(&self.bg));
@@ -63,10 +122,8 @@ impl TrackedWindowImpl {
         self.breakout.fb.resize_buffer(new_size.width, new_size.height);
     }
 
-    fn request_redraw(&self) {
-        self.window().request_redraw();
-    }
-
+    /// Creates a new `DrawWindow` for the specified event loop, using the specified background and
+    /// foreground colors.
     pub fn new(event_loop: &EventLoop<()>, bg: [u8; 4], fg: [u8; 4]) -> Self {
         let mut new = Self {
             breakout: get_fancy::<&str, ()>(Config {
@@ -85,14 +142,7 @@ impl TrackedWindowImpl {
     }
 }
 
-trait TrackedWindow {
-    /// Handles one event from the event loop. Returns true if the window needs to be kept alive,
-    /// otherwise it will be closed. Should manually check IDs coming in to make sure they are
-    /// relevant.
-    fn handle_event(&mut self, event: &Event<()>) -> bool;
-}
-
-impl TrackedWindow for TrackedWindowImpl {
+impl TrackedWindow for DrawWindow {
     fn handle_event(&mut self, event: &Event<()>) -> bool {
         match *event {
             Event::WindowEvent {
@@ -161,41 +211,11 @@ impl TrackedWindow for TrackedWindowImpl {
     }
 }
 
-struct MultiWindow {
-    windows: Vec<Cell<Box<dyn TrackedWindow>>>,
-}
-
-impl MultiWindow {
-    pub fn new() -> Self {
-        MultiWindow {
-            windows: vec![],
-        }
-    }
-
-    pub fn add(&mut self, window: Box<dyn TrackedWindow>) {
-        self.windows.push(Cell::new(window))
-    }
-
-    pub fn run(&mut self, event_loop: &mut EventLoop<()>) {
-        event_loop.run_return(|event, _, flow| {
-            *flow = ControlFlow::Wait;
-
-            self.windows.retain(|window|
-                unsafe { &mut *window.as_ptr() }.handle_event(&event)
-            );
-
-            if self.windows.is_empty() {
-                *flow = ControlFlow::Exit;
-            }
-        })
-    }
-}
-
 fn main() {
     let mut event_loop = EventLoop::new();
     let mut multi_window = MultiWindow::new();
-    multi_window.add(Box::new(TrackedWindowImpl::new(&event_loop, [25u8, 33, 40, 255], [54u8, 165, 209, 255])));
-    multi_window.add(Box::new(TrackedWindowImpl::new(&event_loop, [25u8, 40, 33, 255], [54u8, 209, 82, 255])));
-    multi_window.add(Box::new(TrackedWindowImpl::new(&event_loop, [40u8, 33, 25, 255], [209u8, 82, 54, 255])));
+    multi_window.add(Box::new(DrawWindow::new(&event_loop, [25u8, 33, 40, 255], [54u8, 165, 209, 255])));
+    multi_window.add(Box::new(DrawWindow::new(&event_loop, [25u8, 40, 33, 255], [54u8, 209, 82, 255])));
+    multi_window.add(Box::new(DrawWindow::new(&event_loop, [40u8, 33, 25, 255], [209u8, 82, 54, 255])));
     multi_window.run(&mut event_loop);
 }
