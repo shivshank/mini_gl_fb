@@ -1,7 +1,7 @@
 extern crate mini_gl_fb;
 
 use mini_gl_fb::glutin::event_loop::EventLoop;
-use mini_gl_fb::glutin::event::{Event, WindowEvent, MouseButton};
+use mini_gl_fb::glutin::event::{Event, WindowEvent, MouseButton, VirtualKeyCode, KeyboardInput};
 use mini_gl_fb::{get_fancy, GlutinBreakout, Config};
 use mini_gl_fb::glutin::dpi::LogicalSize;
 use mini_gl_fb::glutin::window::Window;
@@ -149,28 +149,36 @@ impl TrackedWindow for DrawWindow {
                 window_id: id,
                 event: WindowEvent::CloseRequested,
                 ..
-            } => {
-                if self.matches_id(id) {
-                    return false;
-                }
+            } if self.matches_id(id) => {
+                return false;
             }
-            Event::RedrawRequested(id) => {
-                if self.matches_id(id) {
-                    unsafe { self.make_current(); }
-                    self.redraw();
-                }
+            Event::WindowEvent {
+                window_id: id,
+                event: WindowEvent::KeyboardInput {
+                    input: KeyboardInput {
+                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                        state: ElementState::Released,
+                        ..
+                    },
+                    ..
+                },
+                ..
+            } if self.matches_id(id) => {
+                return false;
+            }
+            Event::RedrawRequested(id) if self.matches_id(id) => {
+                unsafe { self.make_current(); }
+                self.redraw();
             }
             Event::WindowEvent {
                 window_id: id,
                 event: WindowEvent::Resized(size),
                 ..
-            } => {
-                if self.matches_id(id) {
-                    unsafe { self.make_current(); }
-                    self.breakout.fb.resize_viewport(size.width, size.height);
-                    self.resize(size.to_logical(self.window().scale_factor()));
-                    self.request_redraw();
-                }
+            } if self.matches_id(id) => {
+                unsafe { self.make_current(); }
+                self.breakout.fb.resize_viewport(size.width, size.height);
+                self.resize(size.to_logical(self.window().scale_factor()));
+                self.request_redraw();
             }
             Event::WindowEvent {
                 window_id: id,
@@ -180,10 +188,8 @@ impl TrackedWindow for DrawWindow {
                     ..
                 },
                 ..
-            } => {
-                if self.matches_id(id) {
-                    self.mouse_state = state;
-                }
+            } if self.matches_id(id) => {
+                self.mouse_state = state;
             }
             Event::WindowEvent {
                 window_id: id,
@@ -192,8 +198,8 @@ impl TrackedWindow for DrawWindow {
                     ..
                 },
                 ..
-            } => {
-                if self.mouse_state == ElementState::Pressed && self.matches_id(id) {
+            } if self.matches_id(id) => {
+                if self.mouse_state == ElementState::Pressed {
                     let mut position = position.to_logical::<u32>(self.window().scale_factor());
                     position.x = std::cmp::min(position.x, self.buffer_size.width - 1);
                     // for inverted y
