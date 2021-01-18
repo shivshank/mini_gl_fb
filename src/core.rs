@@ -183,9 +183,6 @@ impl Internal {
     }
 
     pub fn persist_and_redraw<ET: 'static>(&mut self, event_loop: &mut EventLoop<ET>, redraw: bool) {
-        // prevent event_loop.run_return from requiring a borrow of self, so the closure can use it
-        // I can safely construct a new event loop, or I can use horribly unsafe code which causes
-        // undefined behavior and any code that accidentally touches it to blow up. Safe code it is
         event_loop.run_return(|event, _, flow| {
             *flow = ControlFlow::Wait;
 
