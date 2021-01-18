@@ -148,6 +148,7 @@ pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S>, event_loop: &Event
         buffer_height,
         vp_width,
         vp_height,
+        config.invert_y
     );
 
     MiniGlFb {

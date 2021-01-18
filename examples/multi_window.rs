@@ -47,8 +47,9 @@ impl TrackedWindowImpl {
         new_buffer.chunks_exact_mut(4).for_each(|c| c.copy_from_slice(&self.bg));
 
         if self.buffer_size.width > 0 {
-            for (old_line, new_line) in self.buffer.rchunks_exact(self.buffer_size.width as usize * 4)
-                .zip(new_buffer.rchunks_exact_mut(new_size.width as usize * 4)) {
+            // use rchunks for inverted y
+            for (old_line, new_line) in self.buffer.chunks_exact(self.buffer_size.width as usize * 4)
+                .zip(new_buffer.chunks_exact_mut(new_size.width as usize * 4)) {
                 if old_line.len() <= new_line.len() {
                     new_line[0..old_line.len()].copy_from_slice(old_line)
                 } else {
@@ -70,6 +71,7 @@ impl TrackedWindowImpl {
         let mut new = Self {
             breakout: get_fancy::<&str, ()>(Config {
                 resizable: true,
+                invert_y: false,
                 ..Default::default()
             }, &event_loop).glutin_breakout(),
             buffer: vec![],
@@ -144,7 +146,9 @@ impl TrackedWindow for TrackedWindowImpl {
                 if self.mouse_state == ElementState::Pressed && self.matches_id(id) {
                     let mut position = position.to_logical::<u32>(self.window().scale_factor());
                     position.x = std::cmp::min(position.x, self.buffer_size.width - 1);
-                    position.y = (self.buffer_size.height - 1) - std::cmp::min(position.y, self.buffer_size.height - 1);
+                    // for inverted y
+                    //position.y = (self.buffer_size.height - 1) - std::cmp::min(position.y, self.buffer_size.height - 1);
+                    position.y = std::cmp::min(position.y, self.buffer_size.height - 1);
                     let index = (position.x + position.y * self.buffer_size.width) as usize * 4;
                     self.buffer[index..index + 4].copy_from_slice(&self.fg);
                     self.request_redraw();

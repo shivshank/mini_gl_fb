@@ -50,7 +50,8 @@ pub fn init_framebuffer(
     buffer_width: u32,
     buffer_height: u32,
     viewport_width: u32,
-    viewport_height: u32
+    viewport_height: u32,
+    invert_y: bool
 ) -> Framebuffer {
     // The config takes the size in u32 because that's all that actually makes sense but since
     // OpenGL is from the Land of C where a Working Type System doesn't exist, we work with i32s
@@ -94,14 +95,25 @@ pub fn init_framebuffer(
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         VertexFormat::declare(0);
 
-        let verts: [[f32; 2]; 12] = [
-            [-1., 1.], [0., 1.], // top left
-            [-1., -1.], [0., 0.], // bottom left
-            [1., -1.], [1., 0.], // bottom right
-            [1., -1.], [1., 0.], // bottom right
-            [1., 1.], [1., 1.], // top right
-            [-1., 1.], [0., 1.], // top left
-        ];
+        let verts: [[f32; 2]; 12] = if invert_y {
+            [
+                [-1., 1.], [0., 1.], // top left
+                [-1., -1.], [0., 0.], // bottom left
+                [1., -1.], [1., 0.], // bottom right
+                [1., -1.], [1., 0.], // bottom right
+                [1., 1.], [1., 1.], // top right
+                [-1., 1.], [0., 1.], // top left
+            ]
+        } else {
+            [
+                [-1., -1.], [0., 1.], // bottom left
+                [-1., 1.], [0., 0.], // top left
+                [1., 1.], [1., 0.], // top right
+                [1., 1.], [1., 0.], // top right
+                [1., -1.], [1., 1.], // bottom right
+                [-1., -1.], [0., 1.], // bottom left
+            ]
+        };
         gl::BufferData(gl::ARRAY_BUFFER,
             size_of_val(&verts) as _,
             verts.as_ptr() as *const _,

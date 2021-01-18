@@ -22,7 +22,8 @@ pub struct Config<S: ToString> {
     /// managed by mini_gl_fb.
     pub resizable: bool,
     pub window_title: S,
-    pub window_size: (f64, f64)
+    pub window_size: (f64, f64),
+    pub invert_y: bool
 }
 
 impl<S: ToString + Clone> Clone for Config<S> {
@@ -31,7 +32,8 @@ impl<S: ToString + Clone> Clone for Config<S> {
             buffer_size: self.buffer_size,
             resizable: self.resizable,
             window_title: self.window_title.clone(),
-            window_size: self.window_size
+            window_size: self.window_size,
+            invert_y: self.invert_y
         }
     }
 }
@@ -43,7 +45,8 @@ impl<'a> Default for Config<&'a str> {
             resizable: false,
             // :^)
             window_title: "Super Mini GL Framebufferer 3!",
-            window_size: (600.0, 480.0)
+            window_size: (600.0, 480.0),
+            invert_y: true
         }
     }
 }
@@ -55,7 +58,8 @@ impl Default for Config<String> {
             resizable: false,
             // :^)
             window_title: "Super Mini GL Framebufferer 3!".to_string(),
-            window_size: (600.0, 480.0)
+            window_size: (600.0, 480.0),
+            invert_y: true
         }
     }
 }
