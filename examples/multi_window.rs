@@ -1,16 +1,15 @@
 extern crate mini_gl_fb;
+extern crate glutin;
 
 use mini_gl_fb::glutin::event_loop::EventLoop;
-use mini_gl_fb::glutin::event::{Event, WindowEvent, MouseButton, VirtualKeyCode, KeyboardInput};
+use mini_gl_fb::glutin::event::{Event, WindowEvent, MouseButton, VirtualKeyCode, KeyboardInput, ElementState};
 use mini_gl_fb::{get_fancy, GlutinBreakout, Config};
-use mini_gl_fb::glutin::dpi::LogicalSize;
-use mini_gl_fb::glutin::window::Window;
-use mini_gl_fb::glutin::window::WindowId;
+use mini_gl_fb::glutin::dpi::{LogicalSize, LogicalPosition};
+use mini_gl_fb::glutin::window::{Window, WindowId, CursorIcon};
 use mini_gl_fb::glutin::event_loop::ControlFlow;
 use std::cell::Cell;
 use mini_gl_fb::glutin::platform::run_return::EventLoopExtRunReturn;
 use mini_gl_fb::glutin::{WindowedContext, PossiblyCurrent};
-use mini_gl_fb::glutin::event::ElementState;
 
 /// A window being tracked by a `MultiWindow`. All tracked windows will be forwarded all events
 /// received on the `MultiWindow`'s event loop.
@@ -65,6 +64,7 @@ struct DrawWindow {
     pub bg: [u8; 4],
     pub fg: [u8; 4],
     mouse_state: ElementState,
+    line_start: Option<LogicalPosition<i32>>,
 }
 
 impl DrawWindow {
@@ -122,6 +122,44 @@ impl DrawWindow {
         self.breakout.fb.resize_buffer(new_size.width, new_size.height);
     }
 
+    fn plot(&mut self, position: LogicalPosition<i32>) {
+        if position.x < 0 || position.x >= self.buffer_size.width as i32 ||
+            position.y < 0 || position.y >= self.buffer_size.height as i32 {
+            return
+        }
+
+        let position = position.cast::<u32>();
+        let index = (position.x + position.y * self.buffer_size.width) as usize * 4;
+        self.buffer[index..index + 4].copy_from_slice(&self.fg);
+    }
+
+    // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+    fn plot_line(&mut self, start: LogicalPosition<i32>, end: LogicalPosition<i32>) {
+        let (mut x0, mut y0): (i32, i32) = start.into();
+        let (x1, y1): (i32, i32) = end.into();
+        let dx = (x1 - x0).abs();
+        let sx = if x0 < x1 { 1 } else { -1 };
+        let dy = -(y1 - y0).abs();
+        let sy = if y0 < y1 { 1 } else { -1 };
+        let mut err = dx + dy;
+
+        while x0 != x1 || y0 != y1 {
+            self.plot(LogicalPosition::new(x0, y0));
+            if x0 == x1 && y0 == y1 { break; }
+            let e2 = err * 2;
+            if e2 > dy {
+                err += dy;
+                x0 += sx;
+            }
+            if e2 <= dx {
+                err += dx;
+                y0 += sy;
+            }
+        }
+
+        self.plot(end);
+    }
+
     /// Creates a new `DrawWindow` for the specified event loop, using the specified background and
     /// foreground colors.
     pub fn new(event_loop: &EventLoop<()>, bg: [u8; 4], fg: [u8; 4]) -> Self {
@@ -136,8 +174,10 @@ impl DrawWindow {
             bg,
             fg,
             mouse_state: ElementState::Released,
+            line_start: None,
         };
         new.resize(new.window().inner_size().to_logical(new.window().scale_factor()));
+        new.window().set_cursor_icon(CursorIcon::Crosshair);
         new
     }
 }
@@ -190,6 +230,7 @@ impl TrackedWindow for DrawWindow {
                 ..
             } if self.matches_id(id) => {
                 self.mouse_state = state;
+                self.line_start = None;
             }
             Event::WindowEvent {
                 window_id: id,
@@ -200,13 +241,16 @@ impl TrackedWindow for DrawWindow {
                 ..
             } if self.matches_id(id) => {
                 if self.mouse_state == ElementState::Pressed {
-                    let mut position = position.to_logical::<u32>(self.window().scale_factor());
-                    position.x = std::cmp::min(position.x, self.buffer_size.width - 1);
-                    // for inverted y
-                    //position.y = (self.buffer_size.height - 1) - std::cmp::min(position.y, self.buffer_size.height - 1);
-                    position.y = std::cmp::min(position.y, self.buffer_size.height - 1);
-                    let index = (position.x + position.y * self.buffer_size.width) as usize * 4;
-                    self.buffer[index..index + 4].copy_from_slice(&self.fg);
+                    let mut position = position.to_logical::<i32>(self.window().scale_factor());
+
+                    if let Some(line_start) = self.line_start {
+                        self.plot_line(line_start, position);
+                    } else {
+                        self.plot(position);
+                    }
+
+                    self.line_start = Some(position);
+
                     self.request_redraw();
                 }
             }
