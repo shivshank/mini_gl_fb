@@ -143,7 +143,8 @@ impl TrackedWindow for TrackedWindowImpl {
             } => {
                 if self.mouse_state == ElementState::Pressed && self.matches_id(id) {
                     let mut position = position.to_logical::<u32>(self.window().scale_factor());
-                    position.y = self.buffer_size.height - position.y;
+                    position.x = std::cmp::min(position.x, self.buffer_size.width - 1);
+                    position.y = (self.buffer_size.height - 1) - std::cmp::min(position.y, self.buffer_size.height - 1);
                     let index = (position.x + position.y * self.buffer_size.width) as usize * 4;
                     self.buffer[index..index + 4].copy_from_slice(&self.fg);
                     self.request_redraw();
