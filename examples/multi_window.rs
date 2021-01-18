@@ -11,6 +11,9 @@ use std::cell::Cell;
 use mini_gl_fb::glutin::platform::run_return::EventLoopExtRunReturn;
 use mini_gl_fb::glutin::{WindowedContext, PossiblyCurrent};
 
+/// Turn up this number to make the pixels bigger. 1 is one logical pixel
+const SCALE_FACTOR: f64 = 2.;
+
 /// A window being tracked by a `MultiWindow`. All tracked windows will be forwarded all events
 /// received on the `MultiWindow`'s event loop.
 trait TrackedWindow {
@@ -175,7 +178,7 @@ impl DrawWindow {
             mouse_state: ElementState::Released,
             line_start: None,
         };
-        new.resize(new.window().inner_size().to_logical(new.window().scale_factor()));
+        new.resize(new.window().inner_size().to_logical(new.window().scale_factor() * SCALE_FACTOR));
         new.window().set_cursor_icon(CursorIcon::Crosshair);
         new
     }
@@ -220,7 +223,7 @@ impl TrackedWindow for DrawWindow {
             } if self.matches_id(id) => {
                 unsafe { self.make_current(); }
                 self.breakout.fb.resize_viewport(size.width, size.height);
-                self.resize(size.to_logical(self.window().scale_factor()));
+                self.resize(size.to_logical(self.window().scale_factor() * SCALE_FACTOR));
                 self.request_redraw();
             }
             Event::WindowEvent {
@@ -244,7 +247,7 @@ impl TrackedWindow for DrawWindow {
                 ..
             } if self.matches_id(id) => {
                 if self.mouse_state == ElementState::Pressed {
-                    let position = position.to_logical::<i32>(self.window().scale_factor());
+                    let position = position.to_logical::<i32>(self.window().scale_factor() * SCALE_FACTOR);
 
                     if let Some(line_start) = self.line_start {
                         self.plot_line(line_start, position);
