@@ -7,7 +7,7 @@ use mini_gl_fb::{get_fancy, GlutinBreakout, Config};
 use mini_gl_fb::glutin::dpi::LogicalSize;
 use mini_gl_fb::glutin::window::Window;
 use mini_gl_fb::glutin::window::WindowId;
-use glutin::event_loop::ControlFlow;
+use mini_gl_fb::glutin::event_loop::ControlFlow;
 use std::cell::Cell;
 use mini_gl_fb::glutin::platform::run_return::EventLoopExtRunReturn;
 use mini_gl_fb::glutin::{WindowedContext, PossiblyCurrent};
