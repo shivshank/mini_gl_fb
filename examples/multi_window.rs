@@ -85,7 +85,8 @@ impl DrawWindow {
     /// # Panics
     /// Panics if the OpenGL context cannot be made current.
     unsafe fn make_current(&mut self) {
-        let mut context: WindowedContext<PossiblyCurrent> = std::ptr::read(&mut self.breakout.context as *mut _);
+        let mut context: WindowedContext<PossiblyCurrent> =
+            std::ptr::read(&mut self.breakout.context as *mut _);
         context = context.make_current().unwrap();
         std::ptr::write(&mut self.breakout.context as *mut _, context);
     }
