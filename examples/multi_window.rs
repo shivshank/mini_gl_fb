@@ -197,7 +197,7 @@ impl TrackedWindow for DrawWindow {
                 event: WindowEvent::KeyboardInput {
                     input: KeyboardInput {
                         virtual_keycode: Some(VirtualKeyCode::Escape),
-                        state: ElementState::Released,
+                        state: ElementState::Pressed,
                         ..
                     },
                     ..
