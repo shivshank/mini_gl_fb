@@ -192,5 +192,6 @@ fn main() {
     let mut multi_window = MultiWindow::new();
     multi_window.add(Box::new(TrackedWindowImpl::new(&event_loop, [25u8, 33, 40, 255], [54u8, 165, 209, 255])));
     multi_window.add(Box::new(TrackedWindowImpl::new(&event_loop, [25u8, 40, 33, 255], [54u8, 209, 82, 255])));
+    multi_window.add(Box::new(TrackedWindowImpl::new(&event_loop, [40u8, 33, 25, 255], [209u8, 82, 54, 255])));
     multi_window.run(&mut event_loop);
 }
