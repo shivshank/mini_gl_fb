@@ -145,7 +145,6 @@ impl DrawWindow {
 
         while x0 != x1 || y0 != y1 {
             self.plot(LogicalPosition::new(x0, y0));
-            if x0 == x1 && y0 == y1 { break; }
             let e2 = err * 2;
             if e2 > dy {
                 err += dy;
