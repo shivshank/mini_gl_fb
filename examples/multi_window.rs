@@ -48,6 +48,14 @@ impl MultiWindow {
                 *flow = ControlFlow::Wait;
 
                 self.windows.retain(|window|
+                    // `retain` requires exclusive access to the Vec, but does not give us exclusive
+                    // access to elements within. Therefore, we need to use unsafe code to get one.
+                    // We know our access to the UnsafeCell is exclusive, so we can perform this
+                    // without any UB.
+                    //
+                    // I don't like having to do this, but drain_filter has been unstable for the
+                    // last 4 years, and the nightly peeps don't care about getting it into stable
+                    // because they're happy with nightly.
                     unsafe { &mut *window.get() }.handle_event(&event)
                 );
 
