@@ -334,7 +334,7 @@ pub struct FramebufferInternal {
 
 /// The Framebuffer struct manages the framebuffer of a MGlFb window. Through this struct, you can
 /// update the size and content of the buffer. Framebuffers are usually obtained through
-/// [`MiniGlFb::glutin_breakout()`][crate::MiniGlFb::glutin_breakout], but they're also returned by
+/// [`MiniGlFb::glutin_breakout`][crate::MiniGlFb::glutin_breakout], but they're also returned by
 /// [`init_framebuffer`].
 ///
 /// # Basic usage
