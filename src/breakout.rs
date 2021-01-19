@@ -200,15 +200,15 @@ impl GlutinBreakout {
     /// })
     /// ```
     pub unsafe fn make_current(&mut self) -> Result<(), ContextError> {
-        let context: WindowedContext<PossiblyCurrent> =
-            std::ptr::read(&mut self.context as *mut _);
+        let context_ptr: *mut _ = &mut self.context;
+        let context = std::ptr::read(context_ptr);
         let result = context.make_current();
 
         if let Err((context, err)) = result {
-            std::ptr::write(&mut self.context as *mut _, context);
+            std::ptr::write(context_ptr, context);
             Err(err)
         } else {
-            std::ptr::write(&mut self.context as *mut _, result.unwrap());
+            std::ptr::write(context_ptr, result.unwrap());
             Ok(())
         }
     }
