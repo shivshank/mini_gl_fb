@@ -1,4 +1,4 @@
-use glutin::{WindowedContext, PossiblyCurrent};
+use glutin::{WindowedContext, PossiblyCurrent, ContextError};
 use core::Framebuffer;
 
 use std::collections::HashMap;
@@ -7,6 +7,90 @@ use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
 pub struct GlutinBreakout {
     pub context: WindowedContext<PossiblyCurrent>,
     pub fb: Framebuffer,
+}
+
+impl GlutinBreakout {
+    /// Sets the current thread's OpenGL context to the one contained in this breakout.
+    ///
+    /// Historically, MGlFb did not support multiple windows. It owned its own event loop and you
+    /// weren't allowed to use the library with your own. However, as of version 0.8, you are now
+    /// expected to bring your own event loop to all functions that involve one. This means that
+    /// multiple windows are very possible, and even supported, as long as you're willing to route
+    /// events yourself... and manage all the OpenGL contexts.
+    ///
+    /// The problem with managing multiple OpenGL contexts from one thread is that the "current"
+    /// context is set per-thread. That means you basically have to switch through them really
+    /// quickly if you want to update multiple windows in "parallel". But how do you switch?
+    ///
+    /// Glutin has you partially covered on this one - it has
+    /// [`make_current`][glutin::ContextWrapper<PossiblyCurrent, Window>::make_current]. However,
+    /// that method takes `self` and emits a new `WindowedContext`, and you can't really move `self`
+    /// into that function without unsafe code.
+    ///
+    /// Here is an unsafe function containing code that makes the context current, in-place. That
+    /// way, you can switch contexts in one line of code, and focus on other stuff.
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// # use mini_gl_fb::glutin::event_loop::{EventLoop, ControlFlow};
+    /// # use mini_gl_fb::glutin::event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState};
+    /// # use mini_gl_fb::get_fancy;
+    /// # use mini_gl_fb::Config;
+    /// #
+    /// # let mut event_loop = EventLoop::new();
+    /// # let mut breakout = get_fancy(Config {
+    /// #     window_title: "GlutinBreakout::make_current()",
+    /// #     ..Config::<&str>::default()
+    /// # }, &event_loop).glutin_breakout();
+    /// #
+    /// event_loop.run(move |event, _, flow| {
+    /// #     *flow = ControlFlow::Wait;
+    /// #
+    ///     match event {
+    ///         // ...
+    /// #         Event::WindowEvent { event, .. } => {
+    /// #             match event {
+    /// #                 WindowEvent::CloseRequested |
+    /// #                 WindowEvent::KeyboardInput {
+    /// #                     input: KeyboardInput {
+    /// #                         virtual_keycode: Some(VirtualKeyCode::Escape),
+    /// #                         state: ElementState::Released,
+    /// #                         ..
+    /// #                     },
+    /// #                     ..
+    /// #                 } => *flow = ControlFlow::Exit,
+    /// #                 _ => ()
+    /// #             }
+    /// #         },
+    ///         Event::RedrawRequested(..) => {
+    ///             unsafe { breakout.make_current().unwrap(); }
+    ///             // ...
+    /// #             let window = breakout.context.window();
+    /// #             let size = window.inner_size().to_logical::<f64>(window.scale_factor());
+    /// #             let pixels = size.width.floor() as usize * size.height.floor() as usize;
+    /// #             let your_buffer_here = vec![[0u8, 200, 240, 255]; pixels];
+    ///             breakout.fb.update_buffer(&your_buffer_here);
+    ///             breakout.context.swap_buffers();
+    ///         }
+    ///         // ...
+    /// #         _ => {}
+    ///     }
+    /// })
+    /// ```
+    pub unsafe fn make_current(&mut self) -> Result<(), ContextError> {
+        let context: WindowedContext<PossiblyCurrent> =
+            std::ptr::read(&mut self.context as *mut _);
+        let result = context.make_current();
+
+        if let Err((context, err)) = result {
+            std::ptr::write(&mut self.context as *mut _, context);
+            Err(err)
+        } else {
+            std::ptr::write(&mut self.context as *mut _, result.unwrap());
+            Ok(())
+        }
+    }
 }
 
 pub struct BasicInput {

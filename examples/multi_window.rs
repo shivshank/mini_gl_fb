@@ -9,7 +9,6 @@ use mini_gl_fb::glutin::window::{Window, WindowId, CursorIcon};
 use mini_gl_fb::glutin::event_loop::ControlFlow;
 use std::cell::UnsafeCell;
 use mini_gl_fb::glutin::platform::run_return::EventLoopExtRunReturn;
-use mini_gl_fb::glutin::{WindowedContext, PossiblyCurrent};
 
 /// Turn up this number to make the pixels bigger. 1 is one logical pixel
 const SCALE_FACTOR: f64 = 2.;
@@ -85,18 +84,6 @@ impl DrawWindow {
 
     pub fn matches_id(&self, id: WindowId) -> bool {
         id == self.window().id()
-    }
-
-    /// A call to this function is required before updating the window's buffer or doing any other
-    /// OpenGL things, since all windows are run on the same thread.
-    ///
-    /// # Panics
-    /// Panics if the OpenGL context cannot be made current.
-    unsafe fn make_current(&mut self) {
-        let mut context: WindowedContext<PossiblyCurrent> =
-            std::ptr::read(&mut self.breakout.context as *mut _);
-        context = context.make_current().unwrap();
-        std::ptr::write(&mut self.breakout.context as *mut _, context);
     }
 
     /// Updates the window's buffer. Should only be done inside of RedrawRequested events; outside
@@ -222,7 +209,7 @@ impl TrackedWindow for DrawWindow {
                 }
             }
             Event::RedrawRequested(id) if self.matches_id(id) => {
-                unsafe { self.make_current(); }
+                unsafe { self.breakout.make_current().unwrap(); }
                 self.redraw();
             }
             Event::WindowEvent {
@@ -230,7 +217,7 @@ impl TrackedWindow for DrawWindow {
                 event: WindowEvent::Resized(size),
                 ..
             } if self.matches_id(id) => {
-                unsafe { self.make_current(); }
+                unsafe { self.breakout.make_current().unwrap(); }
                 self.breakout.fb.resize_viewport(size.width, size.height);
                 self.resize(size.to_logical(self.window().scale_factor() * SCALE_FACTOR));
                 self.request_redraw();
