@@ -37,10 +37,10 @@ representative of how little work is required to get started.
 extern crate mini_gl_fb;
 
 fn main() {
-    let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+    let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
     let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
     fb.update_buffer(&buffer);
-    fb.persist();
+    fb.persist(&mut event_loop);
 }
 ```
 
@@ -54,13 +54,15 @@ Get access to mouse position and key inputs with no hassle. The following is ext
 Game of Life example:
 
 ```rust
+use mini_gl_fb::glutin::event_loop::EventLoop;
+use mini_gl_fb::Config;
 
-let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello, World!", 800., 600.);
 let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
 
 // ...
 
-fb.glutin_handle_basic_input(|fb, input| {
+fb.glutin_handle_basic_input(&mut event_loop, |fb, input| {
     let elapsed = previous.elapsed().unwrap();
     let seconds = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
 
@@ -113,11 +115,10 @@ You can also "breakout" and get access to the underlying glutin window while sti
 setup:
 
 ```rust
-let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+let (_, fb) = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
 
 let GlutinBreakout {
-    mut events_loop,
-    gl_window,
+    context,
     mut fb,
 } = fb.glutin_breakout();
 
