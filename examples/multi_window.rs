@@ -7,7 +7,6 @@ use mini_gl_fb::{get_fancy, GlutinBreakout, Config};
 use mini_gl_fb::glutin::dpi::{LogicalSize, LogicalPosition};
 use mini_gl_fb::glutin::window::{Window, WindowId, CursorIcon};
 use mini_gl_fb::glutin::event_loop::ControlFlow;
-use std::cell::UnsafeCell;
 use mini_gl_fb::glutin::platform::run_return::EventLoopExtRunReturn;
 
 /// Turn up this number to make the pixels bigger. 1 is one logical pixel
@@ -24,7 +23,7 @@ trait TrackedWindow {
 
 /// Manages multiple `TrackedWindow`s by forwarding events to them.
 struct MultiWindow {
-    windows: Vec<UnsafeCell<Box<dyn TrackedWindow>>>,
+    windows: Vec<Option<Box<dyn TrackedWindow>>>,
 }
 
 impl MultiWindow {
@@ -37,7 +36,7 @@ impl MultiWindow {
 
     /// Adds a new `TrackedWindow` to the `MultiWindow`.
     pub fn add(&mut self, window: Box<dyn TrackedWindow>) {
-        self.windows.push(UnsafeCell::new(window))
+        self.windows.push(Some(window))
     }
 
     /// Runs the event loop until all `TrackedWindow`s are closed.
@@ -46,17 +45,15 @@ impl MultiWindow {
             event_loop.run_return(|event, _, flow| {
                 *flow = ControlFlow::Wait;
 
-                self.windows.retain(|window|
-                    // `retain` requires exclusive access to the Vec, but does not give us exclusive
-                    // access to elements within. Therefore, we need to use unsafe code to get one.
-                    // We know our access to the UnsafeCell is exclusive, so we can perform this
-                    // without any UB.
-                    //
-                    // I don't like having to do this, but drain_filter has been unstable for the
-                    // last 4 years, and the nightly peeps don't care about getting it into stable
-                    // because they're happy with nightly.
-                    unsafe { &mut *window.get() }.handle_event(&event)
-                );
+                for option in &mut self.windows {
+                    if let Some(window) = option.as_mut() {
+                        if !window.handle_event(&event) {
+                            option.take();
+                        }
+                    }
+                }
+
+                self.windows.retain(Option::is_some);
 
                 if self.windows.is_empty() {
                     *flow = ControlFlow::Exit;
