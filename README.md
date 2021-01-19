@@ -125,6 +125,9 @@ let GlutinBreakout {
 fb.update_buffer(/*...*/);
 ```
 
+The `multi_window` example works by running the winit event loop manually and handling events
+for multiple `GlutinBreakout`s at once. You can do this too!
+
 # Other features
 
  - Black and white rendering, specifying one byte per pixel
