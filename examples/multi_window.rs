@@ -66,7 +66,7 @@ impl MultiWindow {
 /// A basic window that allows you to draw in it. An example of how to implement a `TrackedWindow`.
 struct DrawWindow {
     pub breakout: GlutinBreakout,
-    pub buffer: Vec<u8>,
+    pub buffer: Vec<[u8; 4]>,
     pub buffer_size: LogicalSize<u32>,
     pub bg: [u8; 4],
     pub fg: [u8; 4],
@@ -98,13 +98,12 @@ impl DrawWindow {
     /// Resizes the window's buffer to a new size, attempting to preserve the current content as
     /// much as possible. Fills new space with the background color, and deletes overflowing space.
     fn resize(&mut self, new_size: LogicalSize<u32>) {
-        let mut new_buffer = vec![0u8; new_size.width as usize * new_size.height as usize * 4];
-        new_buffer.chunks_exact_mut(4).for_each(|c| c.copy_from_slice(&self.bg));
+        let mut new_buffer = vec![self.bg; new_size.width as usize * new_size.height as usize];
 
         if self.buffer_size.width > 0 {
             // use rchunks for inverted y
-            for (old_line, new_line) in self.buffer.chunks_exact(self.buffer_size.width as usize * 4)
-                .zip(new_buffer.chunks_exact_mut(new_size.width as usize * 4)) {
+            for (old_line, new_line) in self.buffer.chunks_exact(self.buffer_size.width as usize)
+                .zip(new_buffer.chunks_exact_mut(new_size.width as usize)) {
                 if old_line.len() <= new_line.len() {
                     new_line[0..old_line.len()].copy_from_slice(old_line)
                 } else {
@@ -125,8 +124,8 @@ impl DrawWindow {
         }
 
         let position = position.cast::<u32>();
-        let index = (position.x + position.y * self.buffer_size.width) as usize * 4;
-        self.buffer[index..index + 4].copy_from_slice(&self.fg);
+        let index = (position.x + position.y * self.buffer_size.width) as usize;
+        self.buffer[index] = self.fg;
     }
 
     // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
