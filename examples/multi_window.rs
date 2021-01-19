@@ -7,7 +7,7 @@ use mini_gl_fb::{get_fancy, GlutinBreakout, Config};
 use mini_gl_fb::glutin::dpi::{LogicalSize, LogicalPosition};
 use mini_gl_fb::glutin::window::{Window, WindowId, CursorIcon};
 use mini_gl_fb::glutin::event_loop::ControlFlow;
-use std::cell::Cell;
+use std::cell::UnsafeCell;
 use mini_gl_fb::glutin::platform::run_return::EventLoopExtRunReturn;
 use mini_gl_fb::glutin::{WindowedContext, PossiblyCurrent};
 
@@ -25,7 +25,7 @@ trait TrackedWindow {
 
 /// Manages multiple `TrackedWindow`s by forwarding events to them.
 struct MultiWindow {
-    windows: Vec<Cell<Box<dyn TrackedWindow>>>,
+    windows: Vec<UnsafeCell<Box<dyn TrackedWindow>>>,
 }
 
 impl MultiWindow {
@@ -38,7 +38,7 @@ impl MultiWindow {
 
     /// Adds a new `TrackedWindow` to the `MultiWindow`.
     pub fn add(&mut self, window: Box<dyn TrackedWindow>) {
-        self.windows.push(Cell::new(window))
+        self.windows.push(UnsafeCell::new(window))
     }
 
     /// Runs the event loop until all `TrackedWindow`s are closed.
@@ -48,7 +48,7 @@ impl MultiWindow {
                 *flow = ControlFlow::Wait;
 
                 self.windows.retain(|window|
-                    unsafe { &mut *window.as_ptr() }.handle_event(&event)
+                    unsafe { &mut *window.get() }.handle_event(&event)
                 );
 
                 if self.windows.is_empty() {
