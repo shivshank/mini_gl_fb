@@ -28,6 +28,9 @@ Here are some screenies of the `multi_window` example running on different platf
 ![Arch Linux (X11)](screenies/multi_window_x11.png)
 ![macOS](screenies/multi_window_macos.png)
 
+It is a showcase of the advanced functionality that MGlFb can support, but it's not at all
+representative of how little work is required to get started.
+
 # Usage
 
 ```rust
