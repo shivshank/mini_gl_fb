@@ -4,12 +4,29 @@
 [![Docs.rs](https://docs.rs/mini_gl_fb/badge.svg)](https://docs.rs/mini_gl_fb)
 
 Mini GL Framebuffer provides an easy way to draw to a window from a pixel buffer. OpenGL
-alternative to other easy framebuffer libraries.
+alternative to other easy framebuffer libraries like `minifb` and `pixels`.
 
 It's designed to be dead simple and easy to remember when you just want to get something on the
 screen ASAP. It's also built to be super flexible and easy to grow out of in case your project
-gets serious (MGlFb exposes all of its internals so you can iteratively remove it as a
-dependency over time!).
+gets serious. MGlFb exposes all of its internals so you can iteratively remove it as a
+dependency over time!
+
+You can also use `MiniGlFb::glutin_breakout` to do rad things like multi-window while keeping
+the useful `Framebuffer` helper around. There's an example called `multi_window` which shows
+this in action.
+
+MGlFb should run on any platform you throw it at, thanks to `winit` and `glutin`'s
+cross-platform compatibility. However, you do need proper GPU drivers which support OpenGL.
+That means MGlFb won't work in certain virtual machines or on servers without a GPU.
+Unfortunately, this isn't something that can be helped because MGlFb can't function without
+OpenGL.
+
+# Screenies
+Here are some screenies of the `multi_window` example running on different platforms:
+
+![Windows](screenies/multi_window_windows.png)
+![Arch Linux (X11)](screenies/multi_window_x11.png)
+![macOS](screenies/multi_window_macos.png)
 
 # Usage
 
