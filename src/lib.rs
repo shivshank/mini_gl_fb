@@ -22,7 +22,7 @@
 //! }
 //! ```
 //!
-//! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer[0] is the bottom
+//! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer\[0\] is the bottom
 //! left pixel (not the top). The buffer should be tightly packed with no padding after each row.
 //!
 //! # Interlude: Library philosophy

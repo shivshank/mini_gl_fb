@@ -1,3 +1,6 @@
+//! Contains the [`GlutinBreakout`] struct, which is a way to "break out" the Glutin context and
+//! [`Framebuffer`] object and manipulate them directly.
+
 use glutin::{WindowedContext, PossiblyCurrent, ContextError};
 use core::Framebuffer;
 
@@ -214,6 +217,8 @@ impl GlutinBreakout {
     }
 }
 
+/// Used for [`MiniGlFb::glutin_handle_basic_input`][crate::MiniGlFb::glutin_handle_basic_input].
+/// Contains the current state of the window in a polling-like fashion.
 pub struct BasicInput {
     /// The mouse position in buffer coordinates.
     ///
