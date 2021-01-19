@@ -319,6 +319,7 @@ impl Internal {
 }
 
 /// Contains internal OpenGL things.
+#[non_exhaustive]
 pub struct FramebufferInternal {
     pub program: GLuint,
     pub sampler_location: GLint,
@@ -335,13 +336,46 @@ pub struct FramebufferInternal {
 /// update the size and content of the buffer. Framebuffers are usually obtained through
 /// [`MiniGlFb::glutin_breakout()`][crate::MiniGlFb::glutin_breakout], but they're also returned by
 /// [`init_framebuffer`].
+///
+/// # Basic usage
+/// Firstly, one of the most important things to do when managing a Framebuffer manually is to make
+/// sure that whenever the window is resized, the Framebuffer is the first to know. Usually, this is
+/// handled for you by [`MiniGlFb`][crate::MiniGlFb], but that isn't the case when using the
+/// [`GlutinBreakout`].
+///
+/// Whenever you receive a resize event for your window, make sure to call
+/// [`Framebuffer::resize_viewport`] with the new physical dimensions of your window. You can also
+/// figure out some logical dimensions and call [`Framebuffer::resize_buffer`] too.
+///
+/// Additionally, when managing multiple framebuffers at once, you should make sure to call
+/// [`GlutinBreakout::make_current`] when appropriate, before calling any `Framebuffer` methods.
+/// Forgetting to call `make_current` can cause OpenGL to get confused and draw to the wrong window,
+/// which is probably not what you want.
 pub struct Framebuffer {
+    /// The logical size of the buffer. When you update the buffer via
+    /// [`update_buffer`][Framebuffer::update_buffer], it is expected to contain
+    /// `buffer_size.width * buffer_size.height` pixels.
     pub buffer_size: LogicalSize<i32>,
+
+    /// The physical size of the viewport. This should always be kept up to date with the size of
+    /// the window, and there is no reason to set it otherwise unless you're drawing multiple
+    /// buffers to one window or something funky like that.
     pub vp_size: PhysicalSize<i32>,
+
+    /// This is set to `true` every time [`draw`][Framebuffer::draw] is called. (or, by extension,
+    /// [`update_buffer`][Framebuffer::update_buffer])
+    ///
+    /// It's safe to set this to `false` afterwards, it's just a flag to let you know if code you're
+    /// calling into has updated the buffer or not.
     pub did_draw: bool,
+
+    /// True if the origin should be the bottom left of the screen instead of the top left. For
+    /// historical reasons, this is the default. This should only be configured by changing the
+    /// [`Config`][crate::Config] passed to [`get_fancy`][crate::get_fancy].
     pub inverted_y: bool,
 
-    /// # Disclaimer:
+    /// Contains internal OpenGL things.
+    ///
     /// Accessing fields directly is not the intended usage. If a feature is missing please open an
     /// issue. The fields are public, however, so that while you are waiting for a feature to be
     /// exposed, if you need something in a pinch you can dig in easily and make it happen.
@@ -427,9 +461,9 @@ impl Framebuffer {
     }
 
     /// Draw the quad to the active context. Optionally issue other commands after binding
-    /// everything but before
+    /// everything but before drawing it.
     ///
-    /// You probably want `redraw` (equivalent to `.draw(|_| {})`).
+    /// You probably want [`redraw`][Framebuffer::redraw] (equivalent to `.draw(|_| {})`).
     pub fn draw<F: FnOnce(&Framebuffer)>(&mut self, f: F) {
         unsafe {
             gl::Viewport(0, 0, self.vp_size.width, self.vp_size.height);

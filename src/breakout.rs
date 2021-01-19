@@ -4,8 +4,129 @@ use core::Framebuffer;
 use std::collections::HashMap;
 use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
 
+/// `GlutinBreakout` is useful when you are growing out of the basic input methods and synchronous
+/// nature of [`MiniGlFb`][crate::MiniGlFb], since it's more powerful than the the higher-level
+/// abstrations. You can obtain it by calling
+/// [`MiniGlFb::glutin_breakout()`][crate::MiniGlFb::glutin_breakout].
+///
+/// # Usage for multiple windows
+/// The basic idea for managing multiple windows is to check each incoming event to determine which
+/// window it's for. In order to draw to multiple windows individually, you have to switch the
+/// context using [`make_current`][GlutinBreakout::make_current] before updating the window.
+///
+/// Here's a basic implementation (there's a lot of boilerplate because we're not using the
+/// [`MiniGlFb`][crate::MiniGlFb] API - it's closer to using
+/// [`winit`](https://docs.rs/winit/0.24.0/winit/index.html) directly):
+///
+/// ```
+/// use mini_gl_fb::GlutinBreakout;
+/// use mini_gl_fb::glutin::window::{Window, WindowId};
+/// use mini_gl_fb::glutin::event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState};
+/// use mini_gl_fb::glutin::event_loop::{EventLoop, ControlFlow};
+/// use mini_gl_fb::Config;
+///
+/// struct TrackedWindow {
+///     pub breakout: GlutinBreakout,
+///     pub background: [u8; 4]
+/// }
+///
+/// impl TrackedWindow {
+///     fn window(&self) -> &Window { self.breakout.context.window() }
+///     fn matches_id(&self, id: WindowId) -> bool { id == self.breakout.context.window().id() }
+///
+///     pub fn handle_event(&mut self, event: &Event<()>) -> bool {
+///         match event {
+///             Event::WindowEvent { window_id: id, event, .. } if self.matches_id(*id) => {
+///                 match event {
+///                     WindowEvent::CloseRequested |
+///                     WindowEvent::KeyboardInput {
+///                         input: KeyboardInput {
+///                             virtual_keycode: Some(VirtualKeyCode::Escape),
+///                             state: ElementState::Released,
+///                             ..
+///                         },
+///                         ..
+///                     } => return false,
+///                     WindowEvent::Resized(size) => {
+///                         self.breakout.fb.resize_viewport(size.width, size.height);
+///                         let size = size.to_logical(self.window().scale_factor());
+///                         self.breakout.fb.resize_buffer(size.width, size.height);
+///                     }
+///                     _ => {
+///                         // do other stuff?
+///                     }
+///                 }
+///             }
+///             Event::RedrawRequested(id) if self.matches_id(*id) => {
+///                 // If you don't do this, OpenGL will get confused and only draw to one window.
+///                 unsafe { self.breakout.make_current().unwrap(); }
+///
+///                 let size = self.window().inner_size().to_logical::<f64>(self.window().scale_factor());
+///
+///                 // Unfortunately the performance of this is abysmal. Usually you should cache
+///                 // your buffer and only update it when needed or when the window is resized.
+///                 let pixels = size.width.floor() as usize * size.height.floor() as usize;
+///                 self.breakout.fb.update_buffer(&vec![self.background; pixels]);
+///                 self.breakout.context.swap_buffers();
+///             }
+///             _ => {}
+///         }
+///
+///         true
+///     }
+/// }
+///
+/// fn main() {
+///     let event_loop = EventLoop::new();
+///     let mut windows: Vec<Option<TrackedWindow>> = vec![];
+///
+///     let config: Config<&str> = Config {
+///         resizable: true,
+///         ..Default::default()
+///     };
+///
+///     windows.push(Some(TrackedWindow {
+///         breakout: mini_gl_fb::get_fancy(config.clone(), &event_loop).glutin_breakout(),
+///         background: [224u8, 66, 26, 255]
+///     }));
+///
+///     windows.push(Some(TrackedWindow {
+///         breakout: mini_gl_fb::get_fancy(config.clone(), &event_loop).glutin_breakout(),
+///         background: [26u8, 155, 224, 255]
+///     }));
+///
+///     // run event loop
+///     event_loop.run(move |event, _, flow| {
+///         *flow = ControlFlow::Wait;
+///
+///         for option in &mut windows {
+///             if let Some(window) = option {
+///                 if !window.handle_event(&event) {
+///                     option.take();
+///                 }
+///             }
+///         }
+///
+///         windows.retain(Option::is_some);
+///
+///         if windows.is_empty() {
+///             *flow = ControlFlow::Exit;
+///         }
+///     })
+/// }
+/// ```
+///
+/// It's hard to come up with a generalized, flexible implementation of this, especially if you need
+/// to open more windows based on user input, or run tasks in other threads, etc. Basically, it's
+/// open for you to play with, but it's not functionality that MGlFb wants to include first-class
+/// just yet.
 pub struct GlutinBreakout {
+    /// Contains the OpenGL context and its associated window. This is a
+    /// [`glutin`](https://docs.rs/glutin/0.26.0/glutin/) struct; go see their documentation on
+    /// [`WindowedContext`] for more information.
     pub context: WindowedContext<PossiblyCurrent>,
+    /// Contains the [`Framebuffer`] for that context. Consult its documentation for information on
+    /// how to use it.
     pub fb: Framebuffer,
 }
 
