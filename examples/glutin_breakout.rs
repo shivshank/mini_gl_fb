@@ -39,7 +39,7 @@ fn main() {
                 let (x, y) = position.to_logical::<f64>(context.window().scale_factor()).into();
                 println!("({}, {})", x, y);
                 let mouse_x = min(max(x, 0), 800 - 1);
-                let mouse_y = min(max(fb.buffer_height - y, 0), 600 - 1);
+                let mouse_y = min(max(fb.buffer_size.height - y, 0), 600 - 1);
                 if mouse_down {
                     buffer[(mouse_x + mouse_y * 800) as usize] = [64, 128, 255, 255];
                     fb.update_buffer(&buffer);

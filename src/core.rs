@@ -3,7 +3,7 @@ use breakout::{GlutinBreakout, BasicInput};
 use rustic_gl;
 
 use glutin::{ContextBuilder, WindowedContext, PossiblyCurrent};
-use glutin::dpi::{LogicalSize, PhysicalPosition};
+use glutin::dpi::{LogicalSize, PhysicalPosition, PhysicalSize};
 
 use gl;
 use gl::types::*;
@@ -127,21 +127,21 @@ pub fn init_framebuffer(
     }
 
     Framebuffer {
-        buffer_width,
-        buffer_height,
-        vp_width,
-        vp_height,
-        program,
-        sampler_location,
-        vertex_shader: Some(vertex_shader),
-        geometry_shader: None,
-        fragment_shader: Some(fragment_shader),
-        texture,
-        vao,
-        vbo,
-        texture_format,
+        buffer_size: LogicalSize::new(buffer_width, buffer_height),
+        vp_size: PhysicalSize::new(vp_width, vp_height),
         did_draw: false,
         inverted_y: invert_y,
+        internal: FramebufferInternal {
+            program,
+            sampler_location,
+            vertex_shader: Some(vertex_shader),
+            geometry_shader: None,
+            fragment_shader: Some(fragment_shader),
+            texture,
+            vao,
+            vbo,
+            texture_format,
+        }
     }
 }
 
@@ -285,13 +285,13 @@ impl Internal {
 
             if let Some(pos) = new_mouse_pos {
                 let (x, y): (f64, f64) = pos.into();
-                let x_scale = self.fb.buffer_width as f64 / (self.fb.vp_width as f64);
-                let y_scale = self.fb.buffer_height as f64 / (self.fb.vp_height as f64);
+                let x_scale = self.fb.buffer_size.width as f64 / (self.fb.vp_size.width as f64);
+                let y_scale = self.fb.buffer_size.height as f64 / (self.fb.vp_size.height as f64);
                 let mouse_pos = (
                     x * x_scale,
                     // use the OpenGL texture coordinate system instead of window coordinates
                     if self.fb.inverted_y {
-                        self.fb.buffer_height as f64 - y * y_scale
+                        self.fb.buffer_size.height as f64 - y * y_scale
                     } else {
                         y * y_scale
                     }
@@ -318,24 +318,8 @@ impl Internal {
     }
 }
 
-/// Provides the drawing functionality.
-///
-/// You can get direct access by using a breakout function, such as breakout_glutin.
-///
-/// # Disclaimer:
-///
-/// Accessing fields directly is not the intended usage. If a feature is missing please open an
-/// issue. The fields are public, however, so that while you are waiting for a feature to be
-/// exposed, if you need something in a pinch you can dig in easily and make it happen.
-///
-/// The internal fields may change.
-///
-/// TODO: Possibly create a FramebufferInternal struct?
-pub struct Framebuffer {
-    pub buffer_width: i32,
-    pub buffer_height: i32,
-    pub vp_width: i32,
-    pub vp_height: i32,
+/// Contains internal OpenGL things.
+pub struct FramebufferInternal {
     pub program: GLuint,
     pub sampler_location: GLint,
     pub vertex_shader: Option<GLuint>,
@@ -345,18 +329,35 @@ pub struct Framebuffer {
     pub vao: GLuint,
     pub vbo: GLuint,
     pub texture_format: (BufferFormat, GLenum),
+}
+
+/// The Framebuffer struct manages the framebuffer of a MGlFb window. Through this struct, you can
+/// update the size and content of the buffer. Framebuffers are usually obtained through
+/// [`MiniGlFb::glutin_breakout()`][crate::MiniGlFb::glutin_breakout], but they're also returned by
+/// [`init_framebuffer`].
+pub struct Framebuffer {
+    pub buffer_size: LogicalSize<i32>,
+    pub vp_size: PhysicalSize<i32>,
     pub did_draw: bool,
     pub inverted_y: bool,
+
+    /// # Disclaimer:
+    /// Accessing fields directly is not the intended usage. If a feature is missing please open an
+    /// issue. The fields are public, however, so that while you are waiting for a feature to be
+    /// exposed, if you need something in a pinch you can dig in easily and make it happen.
+    ///
+    /// The internal fields may change.
+    pub internal: FramebufferInternal
 }
 
 impl Framebuffer {
     pub fn update_buffer<T>(&mut self, image_data: &[T]) {
         // Check the length of the passed slice so this is actually a safe method.
-        let (format, kind) = self.texture_format;
+        let (format, kind) = self.internal.texture_format;
         let expected_size_in_bytes = size_of_gl_type_enum(kind)
             * format.components()
-            * self.buffer_width as usize
-            * self.buffer_height as usize;
+            * self.buffer_size.width as usize
+            * self.buffer_size.height as usize;
         let actual_size_in_bytes = size_of_val(image_data);
         if actual_size_in_bytes != expected_size_in_bytes {
             panic!(
@@ -371,8 +372,8 @@ impl Framebuffer {
                     gl::TEXTURE_2D,
                     0,
                     gl::RGBA as _,
-                    fb.buffer_width,
-                    fb.buffer_height,
+                    fb.buffer_size.width,
+                    fb.buffer_size.height,
                     0,
                     format as GLenum,
                     kind,
@@ -383,12 +384,12 @@ impl Framebuffer {
     }
 
     pub fn use_vertex_shader(&mut self, source: &str) {
-        rebuild_shader(&mut self.vertex_shader, gl::VERTEX_SHADER, source);
+        rebuild_shader(&mut self.internal.vertex_shader, gl::VERTEX_SHADER, source);
         self.relink_program();
     }
 
     pub fn use_fragment_shader(&mut self, source: &str) {
-        rebuild_shader(&mut self.fragment_shader, gl::FRAGMENT_SHADER, source);
+        rebuild_shader(&mut self.internal.fragment_shader, gl::FRAGMENT_SHADER, source);
         self.relink_program();
     }
 
@@ -398,7 +399,7 @@ impl Framebuffer {
     }
 
     pub fn use_geometry_shader(&mut self, source: &str) {
-        rebuild_shader(&mut self.geometry_shader, gl::GEOMETRY_SHADER, source);
+        rebuild_shader(&mut self.internal.geometry_shader, gl::GEOMETRY_SHADER, source);
         self.relink_program();
     }
 
@@ -410,17 +411,15 @@ impl Framebuffer {
         &mut self,
         format: BufferFormat,
     ) {
-        self.texture_format = (format, T::to_gl_enum());
+        self.internal.texture_format = (format, T::to_gl_enum());
     }
 
     pub fn resize_buffer(&mut self, buffer_width: u32, buffer_height: u32) {
-        self.buffer_width = buffer_width as _;
-        self.buffer_height = buffer_height as _;
+        self.buffer_size = LogicalSize::new(buffer_width, buffer_height).cast();
     }
 
     pub fn resize_viewport(&mut self, width: u32, height: u32) {
-        self.vp_width = width as _;
-        self.vp_height = height as _;
+        self.vp_size = PhysicalSize::new(width, height).cast();
     }
 
     pub fn redraw(&mut self) {
@@ -433,11 +432,11 @@ impl Framebuffer {
     /// You probably want `redraw` (equivalent to `.draw(|_| {})`).
     pub fn draw<F: FnOnce(&Framebuffer)>(&mut self, f: F) {
         unsafe {
-            gl::Viewport(0, 0, self.vp_width, self.vp_height);
-            gl::UseProgram(self.program);
-            gl::BindVertexArray(self.vao);
+            gl::Viewport(0, 0, self.vp_size.width, self.vp_size.height);
+            gl::UseProgram(self.internal.program);
+            gl::BindVertexArray(self.internal.vao);
             gl::ActiveTexture(0);
-            gl::BindTexture(gl::TEXTURE_2D, self.texture);
+            gl::BindTexture(gl::TEXTURE_2D, self.internal.texture);
             f(self);
             gl::DrawArrays(gl::TRIANGLES, 0, 6);
             gl::BindTexture(gl::TEXTURE_2D, 0);
@@ -449,11 +448,11 @@ impl Framebuffer {
 
     pub fn relink_program(&mut self) {
         unsafe {
-            gl::DeleteProgram(self.program);
-            self.program = build_program(&[
-                self.vertex_shader.clone(),
-                self.fragment_shader.clone(),
-                self.geometry_shader.clone(),
+            gl::DeleteProgram(self.internal.program);
+            self.internal.program = build_program(&[
+                self.internal.vertex_shader.clone(),
+                self.internal.fragment_shader.clone(),
+                self.internal.geometry_shader.clone(),
             ]);
         }
     }
