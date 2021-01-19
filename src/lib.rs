@@ -95,6 +95,7 @@ pub use core::{Internal, BufferFormat, Framebuffer};
 
 use core::ToGlType;
 use glutin::event_loop::EventLoop;
+use glutin::dpi::LogicalSize;
 
 /// Creates a non-resizable window and framebuffer with a given size in logical pixels. On HiDPI
 /// screens, the physical size of the window may be larger or smaller than the provided values, but
@@ -110,7 +111,7 @@ pub fn gotta_go_fast<S: ToString>(
     let event_loop = EventLoop::new();
     let config = Config {
         window_title: window_title.to_string(),
-        window_size: (window_width, window_height),
+        window_size: LogicalSize::from((window_width, window_height)),
         resizable: false,
         .. Default::default()
     };
@@ -128,15 +129,15 @@ pub fn gotta_go_fast<S: ToString>(
 /// glutin or in this library, this function exists as a possible work around (or in case for some
 /// reason everything must be absolutely correct at window creation)
 pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S>, event_loop: &EventLoop<ET>) -> MiniGlFb {
-    let buffer_width = if config.buffer_size.0 == 0 { config.window_size.0.round() as _ }
-        else { config.buffer_size.0 };
-    let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
-        else { config.buffer_size.1 };
+    let buffer_width = if config.buffer_size.width == 0 { config.window_size.width.floor() as _ }
+        else { config.buffer_size.width };
+    let buffer_height = if config.buffer_size.height == 0 { config.window_size.height.floor() as _ }
+        else { config.buffer_size.height };
 
     let context = core::init_glutin_context(
         config.window_title,
-        config.window_size.0,
-        config.window_size.1,
+        config.window_size.width,
+        config.window_size.height,
         config.resizable,
         event_loop
     );
