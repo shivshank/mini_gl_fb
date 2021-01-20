@@ -3,6 +3,7 @@ extern crate mini_gl_fb;
 use mini_gl_fb::{Config, BufferFormat};
 use mini_gl_fb::glutin::event::{VirtualKeyCode, MouseButton};
 use mini_gl_fb::glutin::event_loop::EventLoop;
+use mini_gl_fb::glutin::dpi::LogicalSize;
 
 use std::time::SystemTime;
 
@@ -12,9 +13,9 @@ const HEIGHT: usize = 200;
 fn main() {
     let mut event_loop = EventLoop::new();
     let mut fb = mini_gl_fb::get_fancy(Config {
-        window_title: "PSA: Conway wants you to appreciate group theory instead",
-        window_size: (800.0, 800.0),
-        buffer_size: (WIDTH as _, HEIGHT as _),
+        window_title: String::from("PSA: Conway wants you to appreciate group theory instead"),
+        window_size: LogicalSize::new(800.0, 800.0),
+        buffer_size: Some(LogicalSize::new(WIDTH as _, HEIGHT as _)),
         .. Default::default()
     }, &event_loop);
 

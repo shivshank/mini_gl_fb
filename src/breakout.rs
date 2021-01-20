@@ -83,7 +83,7 @@ use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
 ///     let event_loop = EventLoop::new();
 ///     let mut windows: Vec<Option<TrackedWindow>> = vec![];
 ///
-///     let config: Config<&str> = Config {
+///     let config = Config {
 ///         resizable: true,
 ///         ..Default::default()
 ///     };
@@ -164,8 +164,8 @@ impl GlutinBreakout {
     /// #
     /// # let mut event_loop = EventLoop::new();
     /// # let mut breakout = get_fancy(Config {
-    /// #     window_title: "GlutinBreakout::make_current()",
-    /// #     ..Config::<&str>::default()
+    /// #     window_title: String::from("GlutinBreakout::make_current()"),
+    /// #     ..Default::default()
     /// # }, &event_loop).glutin_breakout();
     /// #
     /// event_loop.run(move |event, _, flow| {

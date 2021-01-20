@@ -51,6 +51,7 @@
 //! ```rust
 //! use mini_gl_fb::{get_fancy, Config};
 //! use mini_gl_fb::glutin::event_loop::EventLoop;
+//! use mini_gl_fb::glutin::dpi::LogicalSize;
 //! # let window_title = "foo";
 //! # let window_width = 800.0;
 //! # let window_height = 600.0;
@@ -58,7 +59,7 @@
 //! let event_loop = EventLoop::new();
 //! let config = Config {
 //!    window_title: window_title.to_string(),
-//!    window_size: (window_width, window_height),
+//!    window_size: LogicalSize::new(window_width, window_height),
 //!    .. Default::default()
 //! };
 //! let fb = get_fancy(config, &event_loop);
@@ -128,11 +129,8 @@ pub fn gotta_go_fast<S: ToString>(
 /// `get_fancy` with a custom config. However, if there is a bug in the OS/windowing system or
 /// glutin or in this library, this function exists as a possible work around (or in case for some
 /// reason everything must be absolutely correct at window creation)
-pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S>, event_loop: &EventLoop<ET>) -> MiniGlFb {
-    let buffer_width = if config.buffer_size.width == 0 { config.window_size.width.floor() as _ }
-        else { config.buffer_size.width };
-    let buffer_height = if config.buffer_size.height == 0 { config.window_size.height.floor() as _ }
-        else { config.buffer_size.height };
+pub fn get_fancy<ET: 'static>(config: Config, event_loop: &EventLoop<ET>) -> MiniGlFb {
+    let buffer_size = config.buffer_size.unwrap_or_else(|| config.window_size.cast());
 
     let context = core::init_glutin_context(
         config.window_title,
@@ -145,8 +143,8 @@ pub fn get_fancy<S: ToString, ET: 'static>(config: Config<S>, event_loop: &Event
     let (vp_width, vp_height) = context.window().inner_size().into();
 
     let fb = core::init_framebuffer(
-        buffer_width,
-        buffer_height,
+        buffer_size.width,
+        buffer_size.height,
         vp_width,
         vp_height,
         config.invert_y
@@ -205,7 +203,7 @@ impl MiniGlFb {
     /// ```rust
     /// # use mini_gl_fb::get_fancy;
     /// # use mini_gl_fb::glutin::event_loop::EventLoop;
-    /// # let mut fb = get_fancy::<&str, ()>(Default::default(), &EventLoop::new());
+    /// # let mut fb = get_fancy(Default::default(), &EventLoop::new());
     /// fb.use_post_process_shader("
     ///     void main_image( out vec4 r_frag_color, in vec2 v_uv ) {
     ///         r_frag_color = texture(u_buffer, v_uv);
@@ -252,7 +250,7 @@ impl MiniGlFb {
     /// use mini_gl_fb::BufferFormat;
     /// # use mini_gl_fb::get_fancy;
     /// # use mini_gl_fb::glutin::event_loop::EventLoop;
-    /// # let mut fb = get_fancy::<&str, ()>(Default::default(), &EventLoop::new());
+    /// # let mut fb = get_fancy(Default::default(), &EventLoop::new());
     ///
     /// fb.change_buffer_format::<u8>(BufferFormat::R);
     /// fb.use_grayscale_shader();

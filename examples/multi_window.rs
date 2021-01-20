@@ -158,7 +158,7 @@ impl DrawWindow {
     /// foreground colors.
     pub fn new(event_loop: &EventLoop<()>, bg: [u8; 4], fg: [u8; 4]) -> Self {
         let mut new = Self {
-            breakout: get_fancy::<&str, ()>(Config {
+            breakout: get_fancy(Config {
                 resizable: true,
                 invert_y: false,
                 ..Default::default()
