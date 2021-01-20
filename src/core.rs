@@ -326,6 +326,7 @@ impl Internal {
 
 /// Contains internal OpenGL things.
 #[non_exhaustive]
+#[derive(Debug)]
 pub struct FramebufferInternal {
     pub program: GLuint,
     pub sampler_location: GLint,
@@ -357,6 +358,7 @@ pub struct FramebufferInternal {
 /// [`GlutinBreakout::make_current`] when appropriate, before calling any `Framebuffer` methods.
 /// Forgetting to call `make_current` can cause OpenGL to get confused and draw to the wrong window,
 /// which is probably not what you want.
+#[derive(Debug)]
 pub struct Framebuffer {
     /// The logical size of the buffer. When you update the buffer via
     /// [`update_buffer`][Framebuffer::update_buffer], it is expected to contain
@@ -498,7 +500,7 @@ impl Framebuffer {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum BufferFormat {
     R = gl::RED,

@@ -17,6 +17,7 @@ use glutin::dpi::LogicalSize;
 /// ```
 ///
 /// If there's a config option you want to see or think is missing, please open an issue!
+#[derive(Clone, PartialEq, Debug)]
 pub struct Config {
     /// Sets the pixel dimensions of the buffer. The buffer will automatically stretch to fill the
     /// whole window. By default this will be the same as the window_size.

@@ -123,6 +123,7 @@ use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
 /// to open more windows based on user input, or run tasks in other threads, etc. Basically, it's
 /// open for you to play with, but it's not functionality that MGlFb wants to include first-class
 /// just yet.
+#[derive(Debug)]
 pub struct GlutinBreakout {
     /// Contains the OpenGL context and its associated window. This is a
     /// [`glutin`](https://docs.rs/glutin/0.26.0/glutin/) struct; go see their documentation on
