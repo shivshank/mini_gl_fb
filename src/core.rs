@@ -13,7 +13,6 @@ use glutin::window::WindowBuilder;
 use glutin::event_loop::{EventLoop, ControlFlow};
 use glutin::platform::run_return::EventLoopExtRunReturn;
 use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput};
-use std::collections::HashMap;
 
 /// Create a context using glutin given a configuration.
 pub fn init_glutin_context<S: ToString, ET: 'static>(
@@ -219,19 +218,10 @@ impl Internal {
     pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
         &mut self, event_loop: &mut EventLoop<ET>, mut handler: F
     ) {
-        let mut input = BasicInput {
-            // Not sure how to set mouse pos at start
-            mouse_pos: (0.0, 0.0),
-            mouse: HashMap::new(),
-            keys: HashMap::new(),
-            modifiers: Default::default(),
-            resized: false,
-        };
+        let mut previous_input: Option<BasicInput> = None;
+        let mut input = BasicInput::default();
 
         event_loop.run_return(|event, _, flow| {
-            // for compatibility with previous versions, which used an infinite run loop
-            *flow = ControlFlow::Poll;
-
             let mut new_size = None;
             let mut new_mouse_pos: Option<PhysicalPosition<f64>> = None;
 
@@ -299,9 +289,25 @@ impl Internal {
                 input.mouse_pos = mouse_pos;
             }
 
-            if !handler(&mut self.fb, &input) {
-                *flow = ControlFlow::Exit;
+            if input.wait {
+                *flow = ControlFlow::Wait;
+
+                // handler only wants to be notified when the input changes
+                if previous_input.as_ref().map_or(true, |p| *p != input) {
+                    if !handler(&mut self.fb, &input) {
+                        *flow = ControlFlow::Exit;
+                    }
+                }
+            } else {
+                // handler wants to be notified regardless
+                if !handler(&mut self.fb, &input) {
+                    *flow = ControlFlow::Exit;
+                } else {
+                    *flow = ControlFlow::Poll;
+                }
             }
+
+            previous_input = Some(input.clone());
 
             if self.fb.did_draw {
                 self.context.swap_buffers().unwrap();

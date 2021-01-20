@@ -219,6 +219,8 @@ impl GlutinBreakout {
 
 /// Used for [`MiniGlFb::glutin_handle_basic_input`][crate::MiniGlFb::glutin_handle_basic_input].
 /// Contains the current state of the window in a polling-like fashion.
+#[non_exhaustive]
+#[derive(Default, Clone, PartialEq)]
 pub struct BasicInput {
     /// The mouse position in buffer coordinates.
     ///
@@ -237,8 +239,14 @@ pub struct BasicInput {
     ///
     /// If a key has not been pressed yet it will not be in the map.
     pub keys: HashMap<VirtualKeyCode, (bool, bool)>,
+    /// The current modifier keys that are being pressed.
     pub modifiers: ModifiersState,
+    /// This is set to `true` when the window is resized outside of your callback. If you do not
+    /// update the buffer in your callback, you should still draw it if this is `true`.
     pub resized: bool,
+    /// If this is set to `true` by your callback, it will not be called as fast as possible, but
+    /// rather only when the input changes.
+    pub wait: bool,
 }
 
 impl BasicInput {
