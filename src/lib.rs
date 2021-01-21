@@ -109,6 +109,7 @@ pub fn gotta_go_fast<S: ToString>(
     window_height: f64
 ) -> (EventLoop<()>, MiniGlFb) {
     let event_loop = EventLoop::new();
+    // this can't use the config! macro because we're inside our own crate
     let config = Config {
         window_title: window_title.to_string(),
         window_size: LogicalSize::from((window_width, window_height)),
