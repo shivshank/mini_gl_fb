@@ -82,6 +82,26 @@
 //! Currently uses the `gl` crate for OpenGL loading. OpenGL context creation may fail if your
 //! setup does not support the newest OpenGL. This bug needs to be verified and is be fixable.
 //! OpenGL ~3 is currently required, but OpenGL 2.1 support should be feasible if requested.
+//!
+//! # Feature matrix
+//!
+//! MGlFb does not implement every feature and is not compatible with everything, but there are
+//! still reasons to choose it over other libraries.
+//!
+//! | Feature                       | `glutin`+`mini_gl_fb` | `winit`+`pixels`     | `minifb`              |
+//! |-------------------------------|-----------------------|----------------------|-----------------------|
+//! | `gotta_go_fast`-like function | Yes                   | No                   | No                    |
+//! | Event-based API               | Yes                   | Yes                  | No                    |
+//! | Multi-window                  | Yes                   | Yes                  | Unsupported           |
+//! | Vsync                         | Yes (use glutin)      | Confusing wgpu stuff | Only FPS locking      |
+//! | Buffer allocation             | By user               | Confusing wgpu stuff | By user               |
+//! | Resizable                     | Yes                   | Requires restart     | Yes                   |
+//! | Scalable                      | Yes                   | Integer              | Buggy on Windows      |
+//! | Hardware-accelerated          | Yes                   | Very                 | macOS-only            |
+//! | Basic input                   | Yes                   | No                   | Always                |
+//! | Multiple rendering backends   | No (OpenGL)           | Yes, by wgpu         | No (one per platform) |
+//! | Custom shaders                | Yes                   | Pre-provided         | No shaders            |
+//! | Requires OpenGL               | 3.3+                  | No                   | No                    |
 
 #[macro_use]
 pub extern crate rustic_gl;
