@@ -218,7 +218,7 @@ impl GlutinBreakout {
 /// Used for [`MiniGlFb::glutin_handle_basic_input`][crate::MiniGlFb::glutin_handle_basic_input].
 /// Contains the current state of the window in a polling-like fashion.
 #[non_exhaustive]
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub struct BasicInput {
     /// The mouse position in buffer coordinates.
     ///
