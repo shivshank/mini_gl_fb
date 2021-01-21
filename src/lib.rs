@@ -2,26 +2,33 @@
 //!
 //! # Basic Usage
 //!
-//! Start with the function `gotta_go_fast`. This will create a basic window and give you a buffer
-//! that you can draw to in one line. The main public API is available through the `MiniGlFb` type.
+//! Start with the function [`gotta_go_fast`]. This will create an [`EventLoop`], basic window, and
+//! a buffer that you can draw to, all in just one function call. The main public API is available
+//! through the [`MiniGlFb`] type.
 //!
 //! ```rust
 //! extern crate mini_gl_fb;
 //!
 //! fn main() {
-//!     let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+//!     // Create the event loop and framebuffer
+//!     let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+//!
+//!     // Fill the buffer with something
 //!     let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
 //!     fb.update_buffer(&buffer);
-//!     fb.persist();
+//!
+//!     // Show the window until the user decides to quit (close button, or Esc)
+//!     fb.persist(&mut event_loop);
 //! }
 //! ```
 //!
-//! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer[0] is the bottom
-//! left pixel. The buffer should be tightly packed with no padding after each row.
+//! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer\[0\] is the bottom
+//! left pixel (not the top). See [`Config::invert_y`] for information on this. The buffer should be
+//! tightly packed with no padding after each row.
 //!
 //! # Interlude: Library philosophy
 //!
-//! All of the internals of this library are exposed. Any fields behind `mini_gl_fb.internal`
+//! All of the internals of this library are exposed. Any fields behind [`MiniGlFb::internal`]
 //! are not considered a part of the public API but are exposed in case the library is missing a
 //! feature that you need "right now." This library is not here to box you in.
 //!
@@ -35,22 +42,31 @@
 //!
 //! # More advanced configuration
 //!
-//! Use the `get_fancy` function for more settings. See `Config` for what's available. This allows
-//! you to, for instance, create a window with a buffer of a different size than the window.
+//! Use the [`get_fancy`] function for more settings. See [`Config`] for what's available. This
+//! allows you to, for instance, create a window with a buffer of a different size than the window.
+//! This is useful for HiDPI support, since you can take advantage of the full resolution of the
+//! screen.
+//!
+//! `get_fancy` (and all the functions in the library) require you to bring your own event loop.
+//! This allows for multiple windows. See the `multi_window` example.
 //!
 //! ```rust
-//! use mini_gl_fb::{get_fancy, Config};
+//! use mini_gl_fb::{get_fancy, config};
+//! use mini_gl_fb::glutin::event_loop::EventLoop;
+//! use mini_gl_fb::glutin::dpi::LogicalSize;
 //! # let window_title = "foo";
 //! # let window_width = 800.0;
 //! # let window_height = 600.0;
 //!
-//! let config = Config {
+//! let event_loop = EventLoop::new();
+//! let config = config! {
 //!    window_title: window_title.to_string(),
-//!    window_size: (window_width, window_height),
-//!    .. Default::default()
+//!    window_size: LogicalSize::new(window_width, window_height)
 //! };
-//! let fb = get_fancy(config);
+//! let fb = get_fancy(config, &event_loop);
 //! ```
+//!
+//! (See the [`Config`] documentation for an explanation of the `config!` macro.)
 //!
 //! If you think something else should be exposed as an option, open an issue!
 //!
@@ -66,6 +82,26 @@
 //! Currently uses the `gl` crate for OpenGL loading. OpenGL context creation may fail if your
 //! setup does not support the newest OpenGL. This bug needs to be verified and is be fixable.
 //! OpenGL ~3 is currently required, but OpenGL 2.1 support should be feasible if requested.
+//!
+//! # Feature matrix
+//!
+//! MGlFb does not implement every feature and is not compatible with everything, but there are
+//! still reasons to choose it over other libraries.
+//!
+//! | Feature                       | `glutin`+`mini_gl_fb` | `winit`+`pixels`     | `minifb`              |
+//! |-------------------------------|-----------------------|----------------------|-----------------------|
+//! | `gotta_go_fast`-like function | Yes                   | No                   | No                    |
+//! | Event-based API               | Yes                   | Yes                  | No                    |
+//! | Multi-window                  | Yes                   | Yes                  | Unsupported           |
+//! | Vsync                         | Yes (use glutin)      | Confusing wgpu stuff | Only FPS locking      |
+//! | Buffer allocation             | By user               | Confusing wgpu stuff | By user               |
+//! | Resizable                     | Yes                   | Requires restart     | Yes                   |
+//! | Scalable                      | Yes                   | Integer              | Buggy on Windows      |
+//! | Hardware-accelerated          | Yes                   | Very                 | macOS-only            |
+//! | Basic input                   | Yes                   | No                   | Always                |
+//! | Multiple rendering backends   | No (OpenGL)           | Yes, by wgpu         | No (one per platform) |
+//! | Custom shaders                | Yes                   | Pre-provided         | No shaders            |
+//! | Requires OpenGL               | 3.3+                  | No                   | No                    |
 
 #[macro_use]
 pub extern crate rustic_gl;
@@ -82,65 +118,63 @@ pub use config::Config;
 pub use core::{Internal, BufferFormat, Framebuffer};
 
 use core::ToGlType;
+use glutin::event_loop::EventLoop;
+use glutin::dpi::LogicalSize;
 
-/// Creates a non resizable window and framebuffer with a given size in pixels.
+/// Creates a non-resizable window and framebuffer with a given size in logical pixels. On HiDPI
+/// screens, the physical size of the window may be larger or smaller than the provided values, but
+/// the buffer will be scaled to match.
 ///
-/// Please note that the window size is in logical device pixels, so on a high DPI monitor the
-/// physical window size may be larger. In this case, the rendered buffer will be scaled it
-/// automatically by OpenGL.
+/// This function also creates an event loop for you. If you would like to create your own event
+/// loop, you can use the `get_fancy` function directly.
 pub fn gotta_go_fast<S: ToString>(
     window_title: S,
     window_width: f64,
     window_height: f64
-) -> MiniGlFb {
-    let config = Config {
+) -> (EventLoop<()>, MiniGlFb) {
+    let event_loop = EventLoop::new();
+    let config = config! {
         window_title: window_title.to_string(),
-        window_size: (window_width, window_height),
-        resizable: false,
-        .. Default::default()
+        window_size: LogicalSize::from((window_width, window_height)),
+        resizable: false
     };
-    get_fancy(config)
+    let fancy = get_fancy(config, &event_loop);
+    (event_loop, fancy)
 }
 
 /// Create a window with a custom configuration.
 ///
 /// If this configuration is not sufficient for you, check out the source for this function.
-/// Creating the MiniGlFb instance is just a call to two functions!
+/// Creating the `MiniGlFb` instance is just a call to two functions!
 ///
 /// Many window settings can be changed after creation, so you most likely don't ever need to call
 /// `get_fancy` with a custom config. However, if there is a bug in the OS/windowing system or
 /// glutin or in this library, this function exists as a possible work around (or in case for some
 /// reason everything must be absolutely correct at window creation)
-pub fn get_fancy<S: ToString>(config: Config<S>) -> MiniGlFb {
-    let buffer_width = if config.buffer_size.0 == 0 { config.window_size.0.round() as _ }
-        else { config.buffer_size.0 };
-    let buffer_height = if config.buffer_size.1 == 0 { config.window_size.1.round() as _ }
-        else { config.buffer_size.1 };
+pub fn get_fancy<ET: 'static>(config: Config, event_loop: &EventLoop<ET>) -> MiniGlFb {
+    let buffer_size = config.buffer_size.unwrap_or_else(|| config.window_size.cast());
 
-    let (events_loop, gl_window) = core::init_glutin_context(
+    let context = core::init_glutin_context(
         config.window_title,
-        config.window_size.0,
-        config.window_size.1,
+        config.window_size.width,
+        config.window_size.height,
         config.resizable,
+        event_loop
     );
 
-    let dpi_factor = gl_window.get_hidpi_factor();
-    let (vp_width, vp_height) = gl_window.get_inner_size()
-        .unwrap()
-        .to_physical(dpi_factor)
-        .into();
+    let (vp_width, vp_height) = context.window().inner_size().into();
 
     let fb = core::init_framebuffer(
-        buffer_width,
-        buffer_height,
+        buffer_size.width,
+        buffer_size.height,
         vp_width,
         vp_height,
+        config.invert_y
     );
 
     MiniGlFb {
         internal: Internal {
-            events_loop,
-            gl_window,
+            context,
             fb,
         }
     }
@@ -174,21 +208,6 @@ impl MiniGlFb {
         self.internal.update_buffer(image_data);
     }
 
-    /// Checks if escape has been pressed or the window has been asked to close.
-    ///
-    /// This function is a good choice for a while loop condition when you are making a simulation
-    /// that needs to progress over time but does not need to handle user input.
-    ///
-    /// Calling this function clears the event queue and also handles resizes for you (if your
-    /// window is resizable). This does not resize the image buffer; the rendered buffer will
-    /// instead scale to fit the window.
-    ///
-    /// Please note that if your window does change size, for buffer to appear scaled it must
-    /// be redrawn, typically either by calling `redraw` or `update_buffer`.
-    pub fn is_running(&mut self) -> bool {
-        self.internal.is_running()
-    }
-
     pub fn redraw(&mut self) {
         self.internal.redraw();
     }
@@ -205,7 +224,8 @@ impl MiniGlFb {
     ///
     /// ```rust
     /// # use mini_gl_fb::get_fancy;
-    /// # let mut fb = get_fancy::<&str>(Default::default());
+    /// # use mini_gl_fb::glutin::event_loop::EventLoop;
+    /// # let mut fb = get_fancy(Default::default(), &EventLoop::new());
     /// fb.use_post_process_shader("
     ///     void main_image( out vec4 r_frag_color, in vec2 v_uv ) {
     ///         r_frag_color = texture(u_buffer, v_uv);
@@ -251,7 +271,8 @@ impl MiniGlFb {
     /// ```rust
     /// use mini_gl_fb::BufferFormat;
     /// # use mini_gl_fb::get_fancy;
-    /// # let mut fb = get_fancy::<&str>(Default::default());
+    /// # use mini_gl_fb::glutin::event_loop::EventLoop;
+    /// # let mut fb = get_fancy(Default::default(), &EventLoop::new());
     ///
     /// fb.change_buffer_format::<u8>(BufferFormat::R);
     /// fb.use_grayscale_shader();
@@ -302,8 +323,8 @@ impl MiniGlFb {
     ///
     /// Supports pressing escape to quit. Automatically scales the rendered buffer to the size of
     /// the window if the window is resiable (but this does not resize the buffer).
-    pub fn persist(&mut self) {
-        self.internal.persist();
+    pub fn persist<ET: 'static>(&mut self, event_loop: &mut EventLoop<ET>) {
+        self.internal.persist(event_loop);
     }
 
     /// `persist` implementation.
@@ -311,8 +332,8 @@ impl MiniGlFb {
     /// When redraw is true, redraws as fast as possible. This function is primarily for debugging.
     ///
     /// See `persist` method documentation for more info.
-    pub fn persist_and_redraw(&mut self, redraw: bool) {
-        self.internal.persist_and_redraw(redraw);
+    pub fn persist_and_redraw<ET: 'static>(&mut self, event_loop: &mut EventLoop<ET>, redraw: bool) {
+        self.internal.persist_and_redraw(event_loop, redraw);
     }
 
     /// Provides an easy interface for rudimentary input handling.
@@ -329,16 +350,16 @@ impl MiniGlFb {
     /// You can cause the handler to exit by returning false from it. This does not kill the
     /// window, so as long as you still have it in scope, you can actually keep using it and,
     /// for example, resume handling input but with a different handler callback.
-    pub fn glutin_handle_basic_input<F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
-        &mut self, handler: F
+    pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
+        &mut self, event_loop: &mut EventLoop<ET>, handler: F
     ) {
-        self.internal.glutin_handle_basic_input(handler);
+        self.internal.glutin_handle_basic_input(event_loop, handler);
     }
 
     /// Need full access to Glutin's event handling? No problem!
     ///
-    /// Hands you the event loop and the window we created, so you can handle events however you
-    /// want, and the Framebuffer, so you can still draw easily!
+    /// Hands you the window we created, so you can handle events however you want, and the
+    /// Framebuffer, so you can still draw easily!
     ///
     /// **IMPORTANT:** You should make sure to render something before swapping buffers or **the
     /// window may flash violently**. You can call `fb.redraw()` directly before if you are unsure

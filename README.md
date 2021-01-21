@@ -4,12 +4,32 @@
 [![Docs.rs](https://docs.rs/mini_gl_fb/badge.svg)](https://docs.rs/mini_gl_fb)
 
 Mini GL Framebuffer provides an easy way to draw to a window from a pixel buffer. OpenGL
-alternative to other easy framebuffer libraries.
+alternative to other easy framebuffer libraries like `minifb` and `pixels`.
 
 It's designed to be dead simple and easy to remember when you just want to get something on the
 screen ASAP. It's also built to be super flexible and easy to grow out of in case your project
-gets serious (MGlFb exposes all of its internals so you can iteratively remove it as a
-dependency over time!).
+gets serious. MGlFb exposes all of its internals so you can iteratively remove it as a
+dependency over time!
+
+You can also use `MiniGlFb::glutin_breakout` to do rad things like multi-window while keeping
+the useful `Framebuffer` helper around. There's an example called `multi_window` which shows
+this in action.
+
+MGlFb should run on any platform you throw it at, thanks to `winit` and `glutin`'s
+cross-platform compatibility. However, you do need proper GPU drivers which support OpenGL.
+That means MGlFb won't work in certain virtual machines or on servers without a GPU.
+Unfortunately, this isn't something that can be helped because MGlFb can't function without
+OpenGL.
+
+# Screenies
+Here are some screenies of the `multi_window` example running on different platforms:
+
+![Windows](screenies/multi_window_windows.png)
+![Arch Linux (X11)](screenies/multi_window_x11.png)
+![macOS](screenies/multi_window_macos.png)
+
+It is a showcase of the advanced functionality that MGlFb can support, but it's not at all
+representative of how little work is required to get started.
 
 # Usage
 
@@ -17,10 +37,10 @@ dependency over time!).
 extern crate mini_gl_fb;
 
 fn main() {
-    let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+    let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
     let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
     fb.update_buffer(&buffer);
-    fb.persist();
+    fb.persist(&mut event_loop);
 }
 ```
 
@@ -34,13 +54,15 @@ Get access to mouse position and key inputs with no hassle. The following is ext
 Game of Life example:
 
 ```rust
+use mini_gl_fb::glutin::event_loop::EventLoop;
+use mini_gl_fb::Config;
 
-let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+let (mut event_loop, mut fb) = mini_gl_fb::gotta_go_fast("Hello, World!", 800., 600.);
 let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
 
 // ...
 
-fb.glutin_handle_basic_input(|fb, input| {
+fb.glutin_handle_basic_input(&mut event_loop, |fb, input| {
     let elapsed = previous.elapsed().unwrap();
     let seconds = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
 
@@ -93,16 +115,18 @@ You can also "breakout" and get access to the underlying glutin window while sti
 setup:
 
 ```rust
-let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+let (_, fb) = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
 
 let GlutinBreakout {
-    mut events_loop,
-    gl_window,
+    context,
     mut fb,
 } = fb.glutin_breakout();
 
 fb.update_buffer(/*...*/);
 ```
+
+The `multi_window` example works by running the winit event loop manually and handling events
+for multiple `GlutinBreakout`s at once. You can do this too!
 
 # Other features
 
