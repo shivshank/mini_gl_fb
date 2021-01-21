@@ -358,6 +358,7 @@ pub struct FramebufferInternal {
 /// [`GlutinBreakout::make_current`] when appropriate, before calling any `Framebuffer` methods.
 /// Forgetting to call `make_current` can cause OpenGL to get confused and draw to the wrong window,
 /// which is probably not what you want.
+#[non_exhaustive]
 #[derive(Debug)]
 pub struct Framebuffer {
     /// The logical size of the buffer. When you update the buffer via
