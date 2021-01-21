@@ -110,14 +110,14 @@ impl Default for Config {
 #[macro_export]
 macro_rules! config {
     {$($k:ident: $v:expr),+,..$from:expr$(,)?} => {{
-        let mut config: ::mini_gl_fb::Config = ::std::clone::Clone::clone(&$from);
+        let mut config: $crate::Config = ::std::clone::Clone::clone(&$from);
         $(config.$k = $v;
         )*config
     }};
     {$($k:ident: $v:expr),+$(,)?} => {{
-        let mut config: ::mini_gl_fb::Config = ::std::default::Default::default();
+        let mut config: $crate::Config = ::std::default::Default::default();
         $(config.$k = $v;
         )*config
     }};
-    {} => { <::mini_gl_fb::Config as ::std::default::Default>::default() }
+    {} => { <$crate::Config as ::std::default::Default>::default() }
 }
