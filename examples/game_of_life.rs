@@ -6,10 +6,14 @@ use mini_gl_fb::glutin::event::{VirtualKeyCode, MouseButton};
 use mini_gl_fb::glutin::event_loop::EventLoop;
 use mini_gl_fb::glutin::dpi::LogicalSize;
 
-use std::time::SystemTime;
+use std::time::{Instant, Duration};
+use mini_gl_fb::breakout::Wakeup;
 
 const WIDTH: usize = 200;
 const HEIGHT: usize = 200;
+
+const NORMAL_SPEED: u64 = 500;
+const TURBO_SPEED: u64 = 20;
 
 fn main() {
     let mut event_loop = EventLoop::new();
@@ -35,38 +39,61 @@ fn main() {
     cells[52 * WIDTH + 50] = true;
     cells[52 * WIDTH + 51] = true;
 
-    let mut previous = SystemTime::now();
-    let mut extra_delay: f64 = 0.0;
+    // ID of the Wakeup which means we should update the board
+    let mut update_id: Option<u32> = None;
 
     fb.glutin_handle_basic_input(&mut event_loop, |fb, input| {
-        let elapsed = previous.elapsed().unwrap();
-        let seconds = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
+        // We're going to use wakeups to update the grid
+        input.wait = true;
+
+        if update_id.is_none() {
+            update_id = Some(input.schedule_wakeup(Instant::now() + Duration::from_millis(500)))
+        } else if let Some(mut wakeup) = input.wakeup {
+            if Some(wakeup.id) == update_id {
+                // Time to update our grid
+                calculate_neighbors(&mut cells, &mut neighbors);
+                make_some_babies(&mut cells, &mut neighbors);
+                fb.update_buffer(&cells);
+
+                // Reschedule another update
+                wakeup.when = Instant::now() + Duration::from_millis(
+                    if input.key_is_down(VirtualKeyCode::LShift) {
+                        TURBO_SPEED
+                    } else {
+                        NORMAL_SPEED
+                    }
+                );
+
+                input.reschedule_wakeup(wakeup);
+            }
+
+            // We will get called again after all wakeups are handled
+            return true;
+        }
 
         if input.key_is_down(VirtualKeyCode::Escape) {
             return false;
         }
 
-        if input.mouse_is_down(MouseButton::Left) {
+        if input.mouse_is_down(MouseButton::Left) || input.mouse_is_down(MouseButton::Right) {
             // Mouse was pressed
             let (x, y) = input.mouse_pos;
             let x = x.min(WIDTH as f64 - 0.0001).max(0.0).floor() as usize;
             let y = y.min(HEIGHT as f64 - 0.0001).max(0.0).floor() as usize;
-            cells[y * WIDTH + x] = true;
+            cells[y * WIDTH + x] = input.mouse_is_down(MouseButton::Left);
             fb.update_buffer(&cells);
             // Give the user extra time to make something pretty each time they click
-            previous = SystemTime::now();
-            extra_delay = (extra_delay + 0.5).min(2.0);
+            if !input.key_is_down(VirtualKeyCode::LShift) {
+                input.adjust_wakeup(update_id.unwrap(), Wakeup::after_millis(2000));
+            }
         }
 
-        // Each generation should stay on screen for half a second
-        if seconds > 0.5 + extra_delay {
-            previous = SystemTime::now();
-            calculate_neighbors(&mut cells, &mut neighbors);
-            make_some_babies(&mut cells, &mut neighbors);
-            fb.update_buffer(&cells);
-            extra_delay = 0.0;
-        } else if input.resized {
-            fb.redraw();
+        if input.key_pressed(VirtualKeyCode::LShift) {
+            // immediately update
+            input.adjust_wakeup(update_id.unwrap(), Wakeup::after_millis(0));
+        } else if input.key_released(VirtualKeyCode::LShift) {
+            // immediately stop updating
+            input.adjust_wakeup(update_id.unwrap(), Wakeup::after_millis(NORMAL_SPEED));
         }
 
         true

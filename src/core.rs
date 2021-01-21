@@ -12,7 +12,8 @@ use std::mem::size_of_val;
 use glutin::window::WindowBuilder;
 use glutin::event_loop::{EventLoop, ControlFlow};
 use glutin::platform::run_return::EventLoopExtRunReturn;
-use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput};
+use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput, StartCause};
+use std::time::Instant;
 
 /// Create a context using glutin given a configuration.
 pub fn init_glutin_context<S: ToString, ET: 'static>(
@@ -215,7 +216,7 @@ impl Internal {
         });
     }
 
-    pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
+    pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &mut BasicInput) -> bool>(
         &mut self, event_loop: &mut EventLoop<ET>, mut handler: F
     ) {
         let mut previous_input: Option<BasicInput> = None;
@@ -234,9 +235,12 @@ impl Internal {
                 val.0 = val.1;
             }
 
-            match event {
+            match &event {
                 Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::CloseRequested => *flow = ControlFlow::Exit,
+                    WindowEvent::CloseRequested => {
+                        *flow = ControlFlow::Exit;
+                        return;
+                    },
                     WindowEvent::KeyboardInput {
                         input: KeyboardInput {
                             virtual_keycode: Some(vk),
@@ -245,23 +249,23 @@ impl Internal {
                         },
                         ..
                     } => {
-                        let key = input.keys.entry(vk)
+                        let key = input.keys.entry(*vk)
                             .or_insert((false, false));
-                        key.1 = state == ElementState::Pressed;
+                        key.1 = *state == ElementState::Pressed;
                     }
                     WindowEvent::CursorMoved { position, .. } => {
-                        new_mouse_pos = Some(position);
+                        new_mouse_pos = Some(*position);
                     }
                     WindowEvent::MouseInput { state, button, .. } => {
-                        let button = input.mouse.entry(button)
+                        let button = input.mouse.entry(*button)
                             .or_insert((false, false));
-                        button.1 = state == ElementState::Pressed;
+                        button.1 = *state == ElementState::Pressed;
                     }
                     WindowEvent::ModifiersChanged(modifiers) => {
-                        input.modifiers = modifiers;
+                        input.modifiers = *modifiers;
                     }
                     WindowEvent::Resized(logical_size) => {
-                        new_size = Some(logical_size);
+                        new_size = Some(*logical_size);
                     }
                     _ => {}
                 },
@@ -270,7 +274,7 @@ impl Internal {
 
             if let Some(size) = new_size {
                 self.resize_viewport(size.width, size.height);
-                input.resized = false;
+                input.resized = true;
             }
 
             if let Some(pos) = new_mouse_pos {
@@ -289,18 +293,39 @@ impl Internal {
                 input.mouse_pos = mouse_pos;
             }
 
+            while let Some(wakeup) = input.wakeups.get(0) {
+                if wakeup.when > Instant::now() { break; }
+
+                input.wakeup = Some(*wakeup);
+
+                if !handler(&mut self.fb, &mut input) {
+                    *flow = ControlFlow::Exit;
+                    return;
+                }
+            }
+
+            input.wakeup = None;
+
             if input.wait {
-                *flow = ControlFlow::Wait;
+                if let Some(wakeup) = input.wakeups.get(0) {
+                    *flow = ControlFlow::WaitUntil(wakeup.when)
+                } else {
+                    *flow = ControlFlow::Wait;
+                }
 
                 // handler only wants to be notified when the input changes
                 if previous_input.as_ref().map_or(true, |p| *p != input) {
-                    if !handler(&mut self.fb, &input) {
-                        *flow = ControlFlow::Exit;
+                    // wakeups have already been handled
+                    if let Event::NewEvents(StartCause::ResumeTimeReached { .. }) = &event {
+                    } else {
+                        if !handler(&mut self.fb, &mut input) {
+                            *flow = ControlFlow::Exit;
+                        }
                     }
                 }
             } else {
                 // handler wants to be notified regardless
-                if !handler(&mut self.fb, &input) {
+                if !handler(&mut self.fb, &mut input) {
                     *flow = ControlFlow::Exit;
                 } else {
                     *flow = ControlFlow::Poll;
