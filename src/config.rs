@@ -77,8 +77,8 @@ impl Default for Config {
 /// assert_eq!(config.invert_y, false);
 /// ```
 ///
-/// As you can see, it's identical to a struct construction, you just use this macro in place of
-/// `Config`. As such, it has a minimal impact on user code. That invocation roughly expands to:
+/// As you can see, it's almost identical to a struct construction. You just use this macro in place
+/// of `Config`. As such, it has a minimal impact on user code. That invocation roughly expands to:
 ///
 /// ```
 /// # use mini_gl_fb::Config;
