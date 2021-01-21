@@ -93,7 +93,7 @@ impl Default for Config {
 ///
 /// This way, adding new fields will not affect existing code.
 ///
-/// Changing options of an existing config can also be done:
+/// You can also create a copy of an existing config, with only a couple options changed:
 ///
 /// ```
 /// # use mini_gl_fb::config;
