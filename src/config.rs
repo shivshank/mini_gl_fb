@@ -1,36 +1,24 @@
 use glutin::dpi::LogicalSize;
 
-/// Configuration for "advanced" use cases, when `gotta_go_fast` isn't doing what you need.
+/// Configuration for "advanced" use cases, when [`gotta_go_fast`][crate::gotta_go_fast] isn't doing
+/// what you need.
 ///
 /// The following pattern is recommended when creating a config:
 ///
 /// ```
+/// use mini_gl_fb::config;
 /// use mini_gl_fb::glutin::dpi::LogicalSize;
 ///
-/// let config = mini_gl_fb::config! {
+/// let config = config! {
 ///     /* specify whichever fields you need to set, for example: */
 ///     window_size: LogicalSize::new(100.0, 100.0),
 ///     resizable: true,
 /// };
 /// ```
 ///
-/// The usage of the `config!` macro is intended to make it easy for us to add new fields in the
-/// future while staying backwards-compatible. Our invocation of `config!` there roughly expands to:
-///
-/// ```
-/// use mini_gl_fb::Config;
-/// use mini_gl_fb::glutin::dpi::LogicalSize;
-///
-/// let config = {
-///     let mut config: Config = Default::default();
-///     config.window_size = LogicalSize::new(100.0, 100.0);
-///     config.resizable = true;
-///     config
-/// };
-/// ```
-///
 /// Since `Config` is `#[non_exhaustive]`, you cannot construct it directly, and can only obtain one
-/// from a trait like [`Default`]. The macro makes it much less tedious to construct custom configs.
+/// from a trait like [`Default`]. The [`config!`][config] macro makes it much less tedious to
+/// construct custom configs. See its documentation for more information.
 ///
 /// If there's a config option you want to see or think is missing, please open an issue!
 #[non_exhaustive]
@@ -68,6 +56,39 @@ impl Default for Config {
     }
 }
 
+
+/// The `config!` macro is intended to make it easy for us to add new fields in the future while
+/// staying backwards-compatible. This is done by making [`Config`] `#[non_exhaustive]` but still
+/// providing [`Default`], so that users can obtain the defaults and modify it to their liking. The
+/// `config!` macro automates this, and makes custom configs just as easy as constructing `Config`
+/// directly would be.
+///
+/// You can use the macro like this:
+///
+/// ```
+/// # use mini_gl_fb::config;
+/// #
+/// let config = config! {
+///     resizable: true,
+///     invert_y: false
+/// };
+/// ```
+///
+/// As you can see, it's identical to a struct construction, you just use this macro in place of
+/// `Config`. As such, it has a minimal impact on user code. That invocation roughly expands to:
+///
+/// ```
+/// # use mini_gl_fb::Config;
+/// #
+/// let config = {
+///     let mut config = Config::default();
+///     config.resizable = true;
+///     config.invert_y = false;
+///     config
+/// };
+/// ```
+///
+/// This way, adding new fields will not affect existing code.
 #[macro_export]
 macro_rules! config {
     {$($k:ident: $v:expr),+$(,)?} => {{

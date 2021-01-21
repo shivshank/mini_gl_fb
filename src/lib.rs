@@ -2,9 +2,9 @@
 //!
 //! # Basic Usage
 //!
-//! Start with the function `gotta_go_fast`. This will create an event loop and basic window and
-//! give you a buffer that you can draw to, all in just one function call. The main public API is
-//! available through the `MiniGlFb` type.
+//! Start with the function [`gotta_go_fast`]. This will create an [`EventLoop`], basic window, and
+//! a buffer that you can draw to, all in just one function call. The main public API is available
+//! through the [`MiniGlFb`] type.
 //!
 //! ```rust
 //! extern crate mini_gl_fb;
@@ -23,7 +23,8 @@
 //! ```
 //!
 //! The default buffer format is 32bit RGBA, so every pixel is four bytes. Buffer\[0\] is the bottom
-//! left pixel (not the top). The buffer should be tightly packed with no padding after each row.
+//! left pixel (not the top). See [`Config::invert_y`] for information on this. The buffer should be
+//! tightly packed with no padding after each row.
 //!
 //! # Interlude: Library philosophy
 //!
@@ -41,15 +42,16 @@
 //!
 //! # More advanced configuration
 //!
-//! Use the `get_fancy` function for more settings. See `Config` for what's available. This allows
-//! you to, for instance, create a window with a buffer of a different size than the window. This is
-//! useful for HiDPI support, since you can take advantage of the full resolution of the screen.
+//! Use the [`get_fancy`] function for more settings. See [`Config`] for what's available. This
+//! allows you to, for instance, create a window with a buffer of a different size than the window.
+//! This is useful for HiDPI support, since you can take advantage of the full resolution of the
+//! screen.
 //!
 //! `get_fancy` (and all the functions in the library) require you to bring your own event loop.
 //! This allows for multiple windows. See the `multi_window` example.
 //!
 //! ```rust
-//! use mini_gl_fb::{get_fancy, Config};
+//! use mini_gl_fb::{get_fancy, config};
 //! use mini_gl_fb::glutin::event_loop::EventLoop;
 //! use mini_gl_fb::glutin::dpi::LogicalSize;
 //! # let window_title = "foo";
@@ -57,12 +59,14 @@
 //! # let window_height = 600.0;
 //!
 //! let event_loop = EventLoop::new();
-//! let config = mini_gl_fb::config! {
+//! let config = config! {
 //!    window_title: window_title.to_string(),
 //!    window_size: LogicalSize::new(window_width, window_height)
 //! };
 //! let fb = get_fancy(config, &event_loop);
 //! ```
+//!
+//! (See the [`Config`] documentation for an explanation of the `config!` macro.)
 //!
 //! If you think something else should be exposed as an option, open an issue!
 //!
