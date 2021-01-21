@@ -27,7 +27,7 @@
 //!
 //! # Interlude: Library philosophy
 //!
-//! All of the internals of this library are exposed. Any fields behind `mini_gl_fb.internal`
+//! All of the internals of this library are exposed. Any fields behind [`MiniGlFb::internal`]
 //! are not considered a part of the public API but are exposed in case the library is missing a
 //! feature that you need "right now." This library is not here to box you in.
 //!
