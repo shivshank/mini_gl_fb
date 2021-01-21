@@ -45,7 +45,7 @@ use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
 ///                     WindowEvent::KeyboardInput {
 ///                         input: KeyboardInput {
 ///                             virtual_keycode: Some(VirtualKeyCode::Escape),
-///                             state: ElementState::Released,
+///                             state: ElementState::Pressed,
 ///                             ..
 ///                         },
 ///                         ..
@@ -177,7 +177,7 @@ impl GlutinBreakout {
     /// #                 WindowEvent::KeyboardInput {
     /// #                     input: KeyboardInput {
     /// #                         virtual_keycode: Some(VirtualKeyCode::Escape),
-    /// #                         state: ElementState::Released,
+    /// #                         state: ElementState::Pressed,
     /// #                         ..
     /// #                     },
     /// #                     ..

@@ -192,7 +192,7 @@ impl Internal {
                     WindowEvent::KeyboardInput { input, .. } => {
                         if let Some(k) = input.virtual_keycode {
                             if k == VirtualKeyCode::Escape
-                                    && input.state == ElementState::Released {
+                                    && input.state == ElementState::Pressed {
                                 *flow = ControlFlow::Exit;
                             }
                         }
