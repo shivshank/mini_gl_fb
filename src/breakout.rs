@@ -83,9 +83,8 @@ use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
 ///     let event_loop = EventLoop::new();
 ///     let mut windows: Vec<Option<TrackedWindow>> = vec![];
 ///
-///     let config = Config {
-///         resizable: true,
-///         ..Default::default()
+///     let config = mini_gl_fb::config! {
+///         resizable: true
 ///     };
 ///
 ///     windows.push(Some(TrackedWindow {
@@ -161,12 +160,10 @@ impl GlutinBreakout {
     /// # use mini_gl_fb::glutin::event_loop::{EventLoop, ControlFlow};
     /// # use mini_gl_fb::glutin::event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState};
     /// # use mini_gl_fb::get_fancy;
-    /// # use mini_gl_fb::Config;
     /// #
     /// # let mut event_loop = EventLoop::new();
-    /// # let mut breakout = get_fancy(Config {
-    /// #     window_title: String::from("GlutinBreakout::make_current()"),
-    /// #     ..Default::default()
+    /// # let mut breakout = get_fancy(mini_gl_fb::config! {
+    /// #     window_title: String::from("GlutinBreakout::make_current()")
     /// # }, &event_loop).glutin_breakout();
     /// #
     /// event_loop.run(move |event, _, flow| {

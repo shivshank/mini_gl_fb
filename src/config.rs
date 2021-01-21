@@ -5,18 +5,35 @@ use glutin::dpi::LogicalSize;
 /// The following pattern is recommended when creating a config:
 ///
 /// ```
-/// use mini_gl_fb::Config;
 /// use mini_gl_fb::glutin::dpi::LogicalSize;
 ///
-/// let config = Config {
+/// let config = mini_gl_fb::config! {
 ///     /* specify whichever fields you need to set, for example: */
 ///     window_size: LogicalSize::new(100.0, 100.0),
 ///     resizable: true,
-///     .. Default::default()
 /// };
 /// ```
 ///
+/// The usage of the `config!` macro is intended to make it easy for us to add new fields in the
+/// future while staying backwards-compatible. Our invocation of `config!` there roughly expands to:
+///
+/// ```
+/// use mini_gl_fb::Config;
+/// use mini_gl_fb::glutin::dpi::LogicalSize;
+///
+/// let config = {
+///     let mut config: Config = Default::default();
+///     config.window_size = LogicalSize::new(100.0, 100.0);
+///     config.resizable = true;
+///     config
+/// };
+/// ```
+///
+/// Since `Config` is `#[non_exhaustive]`, you cannot construct it directly, and can only obtain one
+/// from a trait like [`Default`]. The macro makes it much less tedious to construct custom configs.
+///
 /// If there's a config option you want to see or think is missing, please open an issue!
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Debug)]
 pub struct Config {
     /// Sets the pixel dimensions of the buffer. The buffer will automatically stretch to fill the
@@ -49,4 +66,14 @@ impl Default for Config {
             invert_y: true
         }
     }
+}
+
+#[macro_export]
+macro_rules! config {
+    {$($k:ident: $v:expr),+$(,)?} => {{
+        let mut config: ::mini_gl_fb::Config = ::std::default::Default::default();
+        $(config.$k = $v;
+        )*config
+    }};
+    {} => { <::mini_gl_fb::Config as ::std::default::Default>::default() }
 }

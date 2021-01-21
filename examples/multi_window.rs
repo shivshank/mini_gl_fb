@@ -1,9 +1,10 @@
+#[macro_use]
 extern crate mini_gl_fb;
 extern crate glutin;
 
 use mini_gl_fb::glutin::event_loop::EventLoop;
 use mini_gl_fb::glutin::event::{Event, WindowEvent, MouseButton, VirtualKeyCode, KeyboardInput, ElementState};
-use mini_gl_fb::{get_fancy, GlutinBreakout, Config};
+use mini_gl_fb::{get_fancy, GlutinBreakout};
 use mini_gl_fb::glutin::dpi::{LogicalSize, LogicalPosition};
 use mini_gl_fb::glutin::window::{Window, WindowId, CursorIcon};
 use mini_gl_fb::glutin::event_loop::ControlFlow;
@@ -158,10 +159,9 @@ impl DrawWindow {
     /// foreground colors.
     pub fn new(event_loop: &EventLoop<()>, bg: [u8; 4], fg: [u8; 4]) -> Self {
         let mut new = Self {
-            breakout: get_fancy(Config {
+            breakout: get_fancy(config! {
                 resizable: true,
-                invert_y: false,
-                ..Default::default()
+                invert_y: false
             }, &event_loop).glutin_breakout(),
             buffer: vec![],
             buffer_size: LogicalSize::new(0, 0),

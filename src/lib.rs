@@ -57,10 +57,9 @@
 //! # let window_height = 600.0;
 //!
 //! let event_loop = EventLoop::new();
-//! let config = Config {
+//! let config = mini_gl_fb::config! {
 //!    window_title: window_title.to_string(),
-//!    window_size: LogicalSize::new(window_width, window_height),
-//!    .. Default::default()
+//!    window_size: LogicalSize::new(window_width, window_height)
 //! };
 //! let fb = get_fancy(config, &event_loop);
 //! ```
