@@ -88,6 +88,7 @@ fn main() {
             }
         }
 
+        // TODO support right shift. Probably by querying modifiers somehow. (modifiers support)
         if input.key_pressed(VirtualKeyCode::LShift) {
             // immediately update
             input.adjust_wakeup(update_id.unwrap(), Wakeup::after_millis(0));
