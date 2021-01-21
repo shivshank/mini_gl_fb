@@ -72,6 +72,9 @@ impl Default for Config {
 ///     resizable: true,
 ///     invert_y: false
 /// };
+///
+/// assert_eq!(config.resizable, true);
+/// assert_eq!(config.invert_y, false);
 /// ```
 ///
 /// As you can see, it's identical to a struct construction, you just use this macro in place of
@@ -89,8 +92,28 @@ impl Default for Config {
 /// ```
 ///
 /// This way, adding new fields will not affect existing code.
+///
+/// Changing options of an existing config can also be done:
+///
+/// ```
+/// # use mini_gl_fb::config;
+/// #
+/// let original = config! {};
+/// let copy = config! {
+///     invert_y: false,
+///     ..original
+/// };
+///
+/// assert_eq!(original.invert_y, true);
+/// assert_eq!(copy.invert_y, false);
+/// ```
 #[macro_export]
 macro_rules! config {
+    {$($k:ident: $v:expr),+,..$from:expr$(,)?} => {{
+        let mut config: ::mini_gl_fb::Config = ::std::clone::Clone::clone(&$from);
+        $(config.$k = $v;
+        )*config
+    }};
     {$($k:ident: $v:expr),+$(,)?} => {{
         let mut config: ::mini_gl_fb::Config = ::std::default::Default::default();
         $(config.$k = $v;
