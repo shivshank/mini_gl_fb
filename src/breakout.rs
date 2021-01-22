@@ -347,7 +347,7 @@ impl BasicInput {
     /// Reschedules a wakeup. It is perfectly valid to re-use IDs of wakeups that have already been
     /// triggered; that is why [`BasicInput::wakeup`] is a [`Wakeup`] and not just a [`u32`].
     pub fn reschedule_wakeup(&mut self, wakeup: Wakeup) {
-        let at = self.wakeups.iter().position(|o| o.when > wakeup.when).unwrap_or(0);
+        let at = self.wakeups.iter().position(|o| o.when > wakeup.when).unwrap_or(self.wakeups.len());
         self.wakeups.insert(at, wakeup);
     }
 
