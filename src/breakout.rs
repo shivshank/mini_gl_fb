@@ -283,6 +283,10 @@ pub struct BasicInput {
     ///
     /// Wakeups can be scheduled using [`BasicInput::schedule_wakeup`]. Wakeups can be cancelled
     /// using [`BasicInput::cancel_wakeup`], or by removing the item from the [`Vec`].
+    // NOTE: THIS VEC IS SUPPOSED TO ALWAYS BE SORTED BY SOONEST WAKEUP FIRST!
+    // This contract MUST be upheld at all times, or else weird behavior will result. Only the
+    // wakeup at index 0 is ever checked at a time, no other wakeups will be queued if it is not due
+    // yet. DO NOT IGNORE THIS WARNING!
     pub wakeups: Vec<Wakeup>,
     /// Indicates to your callback which [`Wakeup`] it should be handling. Normally, it's okay to
     /// ignore this, as it will always be [`None`] unless you manually schedule wakeups using
@@ -361,8 +365,10 @@ impl BasicInput {
     /// it for you. Given an ID and an [`Instant`], finds the [`Wakeup`] with the given ID and sets
     /// its time to `when`. Returns `true` if a wakeup was found, `false` otherwise.
     pub fn adjust_wakeup(&mut self, id: u32, when: Instant) -> bool {
-        if let Some(wakeup) = self.wakeups.iter_mut().find(|w| w.id == id) {
+        if let Some(mut wakeup) = self.cancel_wakeup(id) {
+            // Put it back in the queue; this is important because it might end up somewhere else
             wakeup.when = when;
+            self.reschedule_wakeup(wakeup);
             true
         } else {
             false
