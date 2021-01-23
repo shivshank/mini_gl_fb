@@ -20,9 +20,20 @@ use glutin::dpi::LogicalSize;
 /// from a trait like [`Default`]. The [`config!`][config] macro makes it much less tedious to
 /// construct custom configs. See its documentation for more information.
 ///
+/// Alternatively, you can choose to use the builder pattern instead:
+///
+/// ```
+/// use mini_gl_fb::ConfigBuilder;
+///
+/// let config = ConfigBuilder::default()
+///     .invert_y(false)
+///     .build().unwrap();
+/// ```
+///
 /// If there's a config option you want to see or think is missing, please open an issue!
 #[non_exhaustive]
-#[derive(Clone, PartialEq, Debug)]
+#[builder(default)]
+#[derive(Clone, PartialEq, Debug, Builder)]
 pub struct Config {
     /// Sets the pixel dimensions of the buffer. The buffer will automatically stretch to fill the
     /// whole window. By default this will be the same as the window_size.
