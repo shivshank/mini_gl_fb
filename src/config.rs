@@ -27,12 +27,13 @@ use glutin::dpi::LogicalSize;
 ///
 /// let config = ConfigBuilder::default()
 ///     .invert_y(false)
-///     .build().unwrap();
+///     .build();
 /// ```
 ///
 /// If there's a config option you want to see or think is missing, please open an issue!
 #[non_exhaustive]
 #[builder(default)]
+#[builder(build_fn(skip))]
 #[derive(Clone, PartialEq, Debug, Builder)]
 pub struct Config {
     /// Sets the pixel dimensions of the buffer. The buffer will automatically stretch to fill the
@@ -52,6 +53,28 @@ pub struct Config {
     /// option to `false`, you can switch to screen-space coordinates rather than OpenGL
     /// coordinates. Otherwise, you will have to invert all mouse events received from winit/glutin.
     pub invert_y: bool
+}
+
+impl ConfigBuilder {
+    /// Builds a new [`Config`].
+    pub fn build(&self) -> Config {
+        let mut config = Config::default();
+
+        macro_rules! fields {
+            ($($n:ident),+) => {
+                $(
+                if let Some($n) = &self.$n {
+                    config.$n = $n.clone();
+                }
+                )+
+            }
+        }
+
+        // I guess this is better than implementing the entire builder by hand
+        fields!(buffer_size, resizable, window_title, window_size, invert_y);
+
+        config
+    }
 }
 
 impl Default for Config {
