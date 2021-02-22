@@ -297,6 +297,7 @@ impl Internal {
                 if wakeup.when > Instant::now() { break; }
 
                 input.wakeup = Some(*wakeup);
+                input.wakeups.remove(0);
 
                 if !handler(&mut self.fb, &mut input) {
                     *flow = ControlFlow::Exit;
