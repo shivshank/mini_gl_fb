@@ -6,6 +6,7 @@ use core::Framebuffer;
 
 use std::collections::HashMap;
 use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
+use std::time::{Instant, Duration};
 
 /// `GlutinBreakout` is useful when you are growing out of the basic input methods and synchronous
 /// nature of [`MiniGlFb`][crate::MiniGlFb], since it's more powerful than the the higher-level
@@ -215,6 +216,37 @@ impl GlutinBreakout {
     }
 }
 
+#[non_exhaustive]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct Wakeup {
+    /// The [`Instant`] at which this wakeup is scheduled to happen. If the [`Instant`] is in the
+    /// past, the wakeup will happen instantly.
+    pub when: Instant,
+
+    /// A numeric identifier that can be used to determine which wakeup your callback is being run
+    /// for.
+    pub id: u32,
+}
+
+impl Wakeup {
+    /// Returns [`Instant::now`]`() + duration`.
+    pub fn after(duration: Duration) -> Instant {
+        Instant::now() + duration
+    }
+
+    /// The same as [`Wakeup::after`], but constructs a [`Duration`] from a number of milliseconds,
+    /// since [`Duration`] methods are so long...
+    pub fn after_millis(millis: u64) -> Instant {
+        Self::after(Duration::from_millis(millis))
+    }
+
+    /// Modifies this wakeup to trigger after `duration` has passed from [`Instant::now`],
+    /// calculated via [`Wakeup::after`].
+    pub fn trigger_after(&mut self, duration: Duration) {
+        self.when = Self::after(duration);
+    }
+}
+
 /// Used for [`MiniGlFb::glutin_handle_basic_input`][crate::MiniGlFb::glutin_handle_basic_input].
 /// Contains the current state of the window in a polling-like fashion.
 #[non_exhaustive]
@@ -245,6 +277,24 @@ pub struct BasicInput {
     /// If this is set to `true` by your callback, it will not be called as fast as possible, but
     /// rather only when the input changes.
     pub wait: bool,
+    /// A record of all the [`Wakeup`]s that are scheduled to happen. If your callback is being
+    /// called because of a wakeup, [`BasicInput::wakeup`] will be set to `Some(id)` where `id` is
+    /// the unique identifier of the [`Wakeup`].
+    ///
+    /// Wakeups can be scheduled using [`BasicInput::schedule_wakeup`]. Wakeups can be cancelled
+    /// using [`BasicInput::cancel_wakeup`], or by removing the item from the [`Vec`].
+    // NOTE: THIS VEC IS SUPPOSED TO ALWAYS BE SORTED BY SOONEST WAKEUP FIRST!
+    // This contract MUST be upheld at all times, or else weird behavior will result. Only the
+    // wakeup at index 0 is ever checked at a time, no other wakeups will be queued if it is not due
+    // yet. DO NOT IGNORE THIS WARNING!
+    pub wakeups: Vec<Wakeup>,
+    /// Indicates to your callback which [`Wakeup`] it should be handling. Normally, it's okay to
+    /// ignore this, as it will always be [`None`] unless you manually schedule wakeups using
+    /// [`BasicInput::schedule_wakeup`].
+    pub wakeup: Option<Wakeup>,
+    // Internal variable used to keep track of what the next wakeup ID should be. Doesn't need to be
+    // `pub`; `BasicInput` is already `#[non_exhaustive]`.
+    _next_wakeup_id: u32,
 }
 
 impl BasicInput {
@@ -286,5 +336,42 @@ impl BasicInput {
     /// If the key was released this last frame.
     pub fn key_released(&self, button: VirtualKeyCode) -> bool {
         &(true, false) == self.keys.get(&button).unwrap_or(&(false, false))
+    }
+
+    /// Given an [`Instant`] in the future (or in the past, in which case it will be triggered
+    /// immediately), schedules a wakeup to be triggered then. Returns the ID of the wakeup, which
+    /// will be the ID of [`BasicInput::wakeup`] if your callback is getting called by the wakeup.
+    pub fn schedule_wakeup(&mut self, when: Instant) -> u32 {
+        let wakeup = Wakeup { when, id: self._next_wakeup_id };
+        self._next_wakeup_id += 1;
+        self.reschedule_wakeup(wakeup);
+        wakeup.id
+    }
+
+    /// Reschedules a wakeup. It is perfectly valid to re-use IDs of wakeups that have already been
+    /// triggered; that is why [`BasicInput::wakeup`] is a [`Wakeup`] and not just a [`u32`].
+    pub fn reschedule_wakeup(&mut self, wakeup: Wakeup) {
+        let at = self.wakeups.iter().position(|o| o.when > wakeup.when).unwrap_or(self.wakeups.len());
+        self.wakeups.insert(at, wakeup);
+    }
+
+    /// Cancels a previously scheduled [`Wakeup`] by its ID. Returns the [`Wakeup`] if it is found,
+    /// otherwise returns [`None`].
+    pub fn cancel_wakeup(&mut self, id: u32) -> Option<Wakeup> {
+        Some(self.wakeups.remove(self.wakeups.iter().position(|w| w.id == id)?))
+    }
+
+    /// Changing the time of an upcoming wakeup is common enough that there's a utility method to do
+    /// it for you. Given an ID and an [`Instant`], finds the [`Wakeup`] with the given ID and sets
+    /// its time to `when`. Returns `true` if a wakeup was found, `false` otherwise.
+    pub fn adjust_wakeup(&mut self, id: u32, when: Instant) -> bool {
+        if let Some(mut wakeup) = self.cancel_wakeup(id) {
+            // Put it back in the queue; this is important because it might end up somewhere else
+            wakeup.when = when;
+            self.reschedule_wakeup(wakeup);
+            true
+        } else {
+            false
+        }
     }
 }

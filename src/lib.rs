@@ -352,7 +352,7 @@ impl MiniGlFb {
     /// You can cause the handler to exit by returning false from it. This does not kill the
     /// window, so as long as you still have it in scope, you can actually keep using it and,
     /// for example, resume handling input but with a different handler callback.
-    pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &BasicInput) -> bool>(
+    pub fn glutin_handle_basic_input<ET: 'static, F: FnMut(&mut Framebuffer, &mut BasicInput) -> bool>(
         &mut self, event_loop: &mut EventLoop<ET>, handler: F
     ) {
         self.internal.glutin_handle_basic_input(event_loop, handler);
