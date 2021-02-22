@@ -1,4 +1,4 @@
-use breakout::{GlutinBreakout, BasicInput};
+use crate::breakout::{GlutinBreakout, BasicInput};
 
 use rustic_gl;
 
