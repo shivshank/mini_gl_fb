@@ -105,6 +105,8 @@
 
 #[macro_use]
 pub extern crate rustic_gl;
+#[macro_use]
+extern crate derive_builder;
 
 pub extern crate glutin;
 pub extern crate gl;
@@ -114,7 +116,7 @@ pub mod core;
 pub mod breakout;
 
 pub use breakout::{GlutinBreakout, BasicInput};
-pub use config::Config;
+pub use config::{Config, ConfigBuilder};
 pub use core::{Internal, BufferFormat, Framebuffer};
 
 use core::ToGlType;
