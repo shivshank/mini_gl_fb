@@ -20,9 +20,21 @@ use glutin::dpi::LogicalSize;
 /// from a trait like [`Default`]. The [`config!`][config] macro makes it much less tedious to
 /// construct custom configs. See its documentation for more information.
 ///
+/// Alternatively, you can choose to use the builder pattern instead:
+///
+/// ```
+/// use mini_gl_fb::ConfigBuilder;
+///
+/// let config = ConfigBuilder::default()
+///     .invert_y(false)
+///     .build();
+/// ```
+///
 /// If there's a config option you want to see or think is missing, please open an issue!
 #[non_exhaustive]
-#[derive(Clone, PartialEq, Debug)]
+#[builder(default)]
+#[builder(build_fn(skip))]
+#[derive(Clone, PartialEq, Debug, Builder)]
 pub struct Config {
     /// Sets the pixel dimensions of the buffer. The buffer will automatically stretch to fill the
     /// whole window. By default this will be the same as the window_size.
@@ -41,6 +53,28 @@ pub struct Config {
     /// option to `false`, you can switch to screen-space coordinates rather than OpenGL
     /// coordinates. Otherwise, you will have to invert all mouse events received from winit/glutin.
     pub invert_y: bool
+}
+
+impl ConfigBuilder {
+    /// Builds a new [`Config`].
+    pub fn build(&self) -> Config {
+        let mut config = Config::default();
+
+        macro_rules! fields {
+            ($($n:ident),+) => {
+                $(
+                if let Some($n) = &self.$n {
+                    config.$n = $n.clone();
+                }
+                )+
+            }
+        }
+
+        // I guess this is better than implementing the entire builder by hand
+        fields!(buffer_size, resizable, window_title, window_size, invert_y);
+
+        config
+    }
 }
 
 impl Default for Config {
