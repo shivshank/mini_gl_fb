@@ -2,7 +2,7 @@
 //! [`Framebuffer`] object and manipulate them directly.
 
 use glutin::{WindowedContext, PossiblyCurrent, ContextError};
-use core::Framebuffer;
+use crate::core::Framebuffer;
 
 use std::collections::HashMap;
 use glutin::event::{MouseButton, VirtualKeyCode, ModifiersState};
