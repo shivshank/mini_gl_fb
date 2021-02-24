@@ -10,7 +10,7 @@ use gl::types::*;
 
 use std::mem::size_of_val;
 use glutin::window::WindowBuilder;
-use glutin::event_loop::{EventLoop, ControlFlow};
+use glutin::event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget};
 use glutin::platform::run_return::EventLoopExtRunReturn;
 use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput, StartCause};
 use std::time::Instant;
@@ -21,7 +21,7 @@ pub fn init_glutin_context<S: ToString, ET: 'static>(
     window_width: f64,
     window_height: f64,
     resizable: bool,
-    event_loop: &EventLoop<ET>
+    event_loop: &EventLoopWindowTarget<ET>
 ) -> WindowedContext<PossiblyCurrent> {
     let window_size = LogicalSize::new(window_width, window_height);
 
