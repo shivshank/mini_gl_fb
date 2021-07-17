@@ -117,9 +117,9 @@ pub mod breakout;
 
 pub use breakout::{GlutinBreakout, BasicInput};
 pub use config::{Config, ConfigBuilder};
-pub use core::{Internal, BufferFormat, Framebuffer};
+pub use crate::core::{Internal, BufferFormat, Framebuffer};
 
-use core::ToGlType;
+use crate::core::ToGlType;
 use glutin::event_loop::EventLoop;
 use glutin::dpi::LogicalSize;
 

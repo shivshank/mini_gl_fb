@@ -4,6 +4,7 @@ version = "0.8.0"
 authors = ["shivshank"]
 description = "Quick and easy window creation, input, and high speed bitmap rendering"
 repository = "https://github.com/shivshank/mini_gl_fb"
+edition = "2018"
 
 license = "MIT"
 
