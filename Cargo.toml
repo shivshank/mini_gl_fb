@@ -1,6 +1,6 @@
 [package]
 name = "mini_gl_fb"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["shivshank"]
 description = "Quick and easy window creation, input, and high speed bitmap rendering"
 repository = "https://github.com/shivshank/mini_gl_fb"
