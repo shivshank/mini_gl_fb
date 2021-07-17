@@ -120,7 +120,7 @@ pub use config::{Config, ConfigBuilder};
 pub use crate::core::{Internal, BufferFormat, Framebuffer};
 
 use crate::core::ToGlType;
-use glutin::event_loop::EventLoop;
+use glutin::event_loop::{EventLoop, EventLoopWindowTarget};
 use glutin::dpi::LogicalSize;
 
 /// Creates a non-resizable window and framebuffer with a given size in logical pixels. On HiDPI
@@ -153,7 +153,7 @@ pub fn gotta_go_fast<S: ToString>(
 /// `get_fancy` with a custom config. However, if there is a bug in the OS/windowing system or
 /// glutin or in this library, this function exists as a possible work around (or in case for some
 /// reason everything must be absolutely correct at window creation)
-pub fn get_fancy<ET: 'static>(config: Config, event_loop: &EventLoop<ET>) -> MiniGlFb {
+pub fn get_fancy<ET: 'static>(config: Config, event_loop: &EventLoopWindowTarget<ET>) -> MiniGlFb {
     let buffer_size = config.buffer_size.unwrap_or_else(|| config.window_size.cast());
 
     let context = core::init_glutin_context(
